@@ -60,8 +60,5 @@ if(ENABLE_TESTING)
     add_subdirectory(test)
 endif()
 
-# Build ATOOLS
-add_subdirectory(ATOOLS)
-
 # Main code
 add_subdirectory(src)
