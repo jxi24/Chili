@@ -341,7 +341,6 @@ class FourVector {
         ///@param idx: Index to access
         ///@return double: The value of the vector at the given index
         double& operator[](const std::size_t& idx) {
-            if(idx > 3) throw std::range_error("Max value is 3.");
             return vec[idx];
         }
 
@@ -349,7 +348,6 @@ class FourVector {
         ///@param idx: Index to access
         ///@return double: The value of the vector at the given index
         const double& operator[](const std::size_t& idx) const {
-            if(idx > 3) throw std::range_error("Max value is 3.");
             return vec[idx];
         }
         /// @}
