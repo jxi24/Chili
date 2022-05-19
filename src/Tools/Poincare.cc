@@ -4,7 +4,7 @@
 
 using namespace apes;
 
-Poincare::Poincare(const FourVector &v): 
+Poincare::Poincare(const FourVector &v):
   m_type(1), m_l(v), m_rsq(v.Mass()) {}
 
 Poincare::Poincare(const FourVector &v1,const FourVector &v2,int mode):
@@ -37,7 +37,7 @@ void Poincare::Boost(FourVector &v) const
   double lv(m_l[1]*v[1]+m_l[2]*v[2]+m_l[3]*v[3]);
   double v0((m_l[0]*v[0]-lv)/m_rsq);
   double c1((v[0]+v0)/(m_rsq+m_l[0]));
-  v=FourVector(v.Vec3()-c1*m_l.Vec3(),v0); 
+  v=FourVector(v.Vec3()-c1*m_l.Vec3(),v0);
 }
 
 void Poincare::BoostBack(FourVector &v) const
@@ -45,7 +45,7 @@ void Poincare::BoostBack(FourVector &v) const
   double lv(m_l[1]*v[1]+m_l[2]*v[2]+m_l[3]*v[3]);
   double v0((m_l[0]*v[0]+lv)/m_rsq);
   double c1((v[0]+v0)/(m_rsq+m_l[0]));
-  v=FourVector(v.Vec3()+c1*m_l.Vec3(),v0);  
+  v=FourVector(v.Vec3()+c1*m_l.Vec3(),v0);
 }
 
 void Poincare::Rotate(FourVector &v) const
