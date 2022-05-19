@@ -99,7 +99,7 @@ struct convert<apes::Channel<T>> {
     static Node encode(const apes::Channel<T> &rhs) {
         Node node;
         node["Integrator"] = rhs.integrator;
-        node["Mapper"] = rhs.mapping -> ToYAML();
+        // node["Mapper"] = rhs.mapping -> ToYAML();
         return node;
     }
 
@@ -117,7 +117,7 @@ struct convert<apes::Channel<double>> {
     static Node encode(const apes::Channel<double> &rhs) {
         Node node;
         node["Integrator"] = rhs.integrator;
-        node["Mapper"] = rhs.mapping -> ToYAML();
+        // node["Mapper"] = rhs.mapping -> ToYAML();
         return node;
     }
 

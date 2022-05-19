@@ -5,6 +5,7 @@
 
 #include "Integrator/AdaptiveMap.hh"
 #include "Integrator/Random.hh"
+#include "spdlog/spdlog.h"
 
 using apes::AdaptiveMap;
 

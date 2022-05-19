@@ -8,6 +8,7 @@
 #include "Integrator/Vegas.hh"
 
 #include "fmt/format.h"
+#include "spdlog/spdlog.h"
 
 using apes::Vegas;
 using apes::VegasSummary;

@@ -1,24 +1,20 @@
 #pragma once
 
 #include "Channel/Mapper.hh"
-#include "Tools/vec4.h"
-#include "Tools/recursion.h"
+#include "Tools/FourVector.hh"
 
 namespace apes {
 
 struct ChannelNode;
 
-class Channel : public Mapper<Mom<double>> {
+class FSMapper : public Mapper<FourVector> {
     public:
-        Channel(std::vector<int> flavs, const MatrixElement &amp) : m_n{flavs.size()}, m_nout{m_n-2} {
-            for(const auto &flav : flavs) {
-                m_s.push_back(amp.masses[static_cast<size_t>(std::abs(flav))]);
-            }
+        FSMapper(size_t nparts, std::vector<double> s) : m_n{nparts}, m_nout{m_n-2}, m_s{std::move(s)} {
             m_p.resize(1 << m_n);
         }
         bool InitializeChannel(std::shared_ptr<ChannelNode>);
-        void GeneratePoint(std::vector<Mom<double>>&, const std::vector<double>&) override;
-        double GenerateWeight(const std::vector<Mom<double>>&, std::vector<double>&) override;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         size_t NDims() const override { return 3*m_nout - 4; }
         void WriteChannel() const;
 
@@ -54,7 +50,7 @@ class Channel : public Mapper<Mom<double>> {
         std::vector<double> m_s;
         std::string m_name;
         std::shared_ptr<ChannelNode> m_nodes{};
-        std::vector<Mom<double>> m_p;
+        std::vector<FourVector> m_p;
         size_t iran{};
 };
 

@@ -1,23 +1,25 @@
 #include "Channel/ChannelUtils.hh"
 #include "Channel/ChannelNode.hh"
+#include <iostream>
 
 using apes::ChannelNode;
 using apes::SetBit;
 using apes::SetBits;
 using apes::NextPermutation;
-using apes::Channel;
+using apes::FSMapper;
 using ChannelMap = std::map<size_t, std::vector<std::shared_ptr<ChannelNode>>>;
 
-std::vector<std::unique_ptr<Channel>> apes::ConstructChannels(const Process &proc, const MatrixElement &amp) {
+std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(const std::vector<int> &flavs, const Model &model) {
     ChannelMap channelComponents;
 
     // Setup initial states
-    const auto flavs = proc.get_particles_in_base_ordering();
+    std::vector<double> masses;
     for(size_t i = 0; i < flavs.size(); ++i) {
         auto node = std::make_shared<ChannelNode>();
         node -> m_pid = flavs[i];
         node -> m_idx = 1 << i;
-        node -> m_mass = amp.masses[static_cast<size_t>(std::abs(flavs[i]))];
+        node -> m_mass = model.Mass(flavs[i]);
+        masses.push_back(flavs[i]);
         channelComponents[(1 << i)].push_back(node);
     }
 
@@ -40,8 +42,8 @@ std::vector<std::unique_ptr<Channel>> apes::ConstructChannels(const Process &pro
                     // Create new channel component
                     for(const auto &subChan1 : channelComponents[subCur1]) {
                         for(const auto &subChan2 : channelComponents[subCur2]) {
-                            auto combined = amp.combinable(subChan1 -> m_pid,
-                                                           subChan2 -> m_pid);
+                            auto combined = model.Combinable(subChan1 -> m_pid,
+                                                             subChan2 -> m_pid);
                             if(combined.size() == 0) continue;
                             
                             // Last one to be combined
@@ -51,7 +53,7 @@ std::vector<std::unique_ptr<Channel>> apes::ConstructChannels(const Process &pro
                                 node -> m_right = subChan2;
                                 node -> m_pid = flavs[0];
                                 node -> m_idx = cur;
-                                node -> m_mass = amp.masses[static_cast<size_t>(std::abs(flavs[0]))];
+                                node -> m_mass = model.Mass(flavs[0]);
                                 channelComponents[cur].push_back(node);
                             } else {
                                 for(const auto & elm : combined) {
@@ -60,7 +62,7 @@ std::vector<std::unique_ptr<Channel>> apes::ConstructChannels(const Process &pro
                                     node -> m_right = subChan2;
                                     node -> m_pid = elm;
                                     node -> m_idx = cur;
-                                    node -> m_mass = amp.masses[static_cast<size_t>(std::abs(elm))];
+                                    node -> m_mass = model.Mass(elm);
                                     channelComponents[cur].push_back(node);
                                 }
                             }
@@ -75,9 +77,9 @@ std::vector<std::unique_ptr<Channel>> apes::ConstructChannels(const Process &pro
 
     unsigned int lid = (1u << flavs.size()) - 2;
     if(channelComponents.find(lid) == channelComponents.end()) throw;
-    std::vector<std::unique_ptr<Channel>> channels;
+    std::vector<std::unique_ptr<FSMapper>> channels;
     for(const auto &cur : channelComponents[lid]) {
-        auto channel = std::make_unique<Channel>(flavs, amp);
+        auto channel = std::make_unique<FSMapper>(flavs.size(), masses);
         channel -> InitializeChannel(cur);
         std::cout << channel -> ToString() << std::endl;
         channels.push_back(std::move(channel));
