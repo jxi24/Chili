@@ -11,7 +11,7 @@ double FSMapper::SCut(unsigned int id) {
     }
     double result = 0;
     for(unsigned int i = 0; i < m_n; ++i) {
-        if(apes::SetBit(id, i)) {
+        if(apes::BitIsSet(id, i)) {
             result += sqrt(m_s[i]);
         }
     }
@@ -25,7 +25,7 @@ unsigned int FSMapper::SId(unsigned int id) {
 void FSMapper::FillMomenta(ChannelNode *node) {
     m_p[node -> m_idx] = FourVector{};
     for(unsigned int i = 0; i < m_n; ++i) {
-        if(apes::SetBit(node -> m_idx, i)) {
+        if(apes::BitIsSet(node -> m_idx, i)) {
             m_p[node -> m_idx] += m_p[(1 << i)];
         }
     }

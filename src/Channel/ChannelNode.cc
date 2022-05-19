@@ -3,8 +3,8 @@
 #include <iostream>
 
 using apes::ChannelNode;
-using apes::SetBit;
-using apes::SetBits;
+using apes::BitIsSet;
+using apes::BitsAreSet;
 using apes::NextPermutation;
 using apes::FSMapper;
 using ChannelMap = std::map<size_t, std::vector<std::shared_ptr<ChannelNode>>>;
@@ -29,7 +29,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(const std::vector
         unsigned int cur = (1u << nset) - 1;
         // Combine all currents
         while(cur < (1u << (flavs.size()))) {
-            auto set = SetBits(cur, static_cast<unsigned int>(flavs.size()));
+            auto set = BitsAreSet(cur, static_cast<unsigned int>(flavs.size()));
             for(unsigned int iset = 1; iset < nset; ++iset) {
                 unsigned int idx = (1u << iset) - 1;
                 while(idx < (1ul << (nset - 1))) {
@@ -38,7 +38,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(const std::vector
                         subCur1 += set[i]*((idx >> i) & 1);
                     auto subCur2 = cur ^ subCur1;
                     // Skip over fixed leg
-                    if(SetBit(subCur1, 0) || SetBit(subCur2, 0)) break;
+                    if(BitIsSet(subCur1, 0) || BitIsSet(subCur2, 0)) break;
                     // Create new channel component
                     for(const auto &subChan1 : channelComponents[subCur1]) {
                         for(const auto &subChan2 : channelComponents[subCur2]) {

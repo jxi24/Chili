@@ -11,14 +11,14 @@ inline unsigned int NextPermutation(unsigned int inp) {
     return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(inp) + 1));
 }
 
-inline bool SetBit(unsigned int inp, unsigned int pos) {
-    return inp & (1 << pos);
+inline bool BitIsSet(unsigned int inp, unsigned int pos) {
+  return inp & (1 << pos);
 }
 
-inline std::vector<unsigned int> SetBits(unsigned int inp, unsigned int size) {
-    std::vector<unsigned int> set;
+inline std::vector<bool> BitsAreSet(unsigned int inp, unsigned int size) {
+    std::vector<bool> set;
     for(unsigned int i = 0; i < size; ++i) {
-        if(SetBit(inp, i)) set.push_back(inp & (1 << i));
+        if(BitIsSet(inp, i)) set.push_back(inp & (1 << i));
     }
     return set;
 }
