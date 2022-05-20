@@ -19,13 +19,13 @@ namespace apes {
   double ThresholdMomenta(double,double,double,double,double);
   double ThresholdWeight(double,double,double,double,double,double&);
 
-  void Isotropic2Momenta(FourVector,double,double,
-			 FourVector&,FourVector&,
-			 double,double,double=-1.0,double=1.0,
-			 const FourVector &x=FourVector(1.,1.,0.,0.));
-  double Isotropic2Weight(const FourVector&,const FourVector&,
-			  double&,double&,double=-1.0,double=1.0,
-			  const FourVector &x=FourVector(1.,1.,0.,0.));
+  void SChannelMomenta(FourVector,double,double,
+		       FourVector&,FourVector&,
+		       double,double,double=-1.0,double=1.0,
+		       const FourVector &x=FourVector(1.,1.,0.,0.));
+  double SChannelWeight(const FourVector&,const FourVector&,
+			double&,double&,double=-1.0,double=1.0,
+			const FourVector &x=FourVector(1.,1.,0.,0.));
 
   void TChannelMomenta(FourVector,FourVector,
 		       FourVector&,FourVector&,

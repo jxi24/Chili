@@ -2,6 +2,7 @@
 #include "Tools/Poincare.hh"
 #include "Tools/ThreeVector.hh"
 #include "Tools/Utilities.hh"
+#include "spdlog/spdlog.h"
 
 using namespace apes;
 
@@ -53,11 +54,9 @@ double apes::PeakedWeight(double a,double cn,double cxm,double cxp,double res,in
 double apes::MasslessPropWeight
 (double sexp,double smin,double smax,const double s,double &ran)
 {
-  // if (s<smin || s>smax)
-  //   msg_Error()<<METHOD<<"(): Value out of bounds: "
-  // 	       <<smin<<" .. " <<smax<<" vs. "<<s<< std::endl;
+  if (s<smin || s>smax) spdlog::error("MasslessPropWeight(): Value out of bounds: {} .. {} vs. {}",smin,smax,s);
   double w(PeakedWeight(0.,sexp,smin,smax,s,1,ran)/pow(s,-sexp));
-  // if (IsBad(w)) msg_Error()<<METHOD<<"(): Weight is "<<w<<std::endl;
+  if (IsBad(w)) spdlog::error("MasslessPropWeight(): Weight is {}",w);
   return 1./w;
 }
 
@@ -65,23 +64,21 @@ double apes::MasslessPropMomenta
 (double sexp,double smin,double smax, double ran)
 {
   double s(PeakedDist(0.,sexp,smin,smax,1,ran));
-  // if (IsBad(s)) msg_Error()<<METHOD<<"(): Value is "<<s<<std::endl;
+  if (IsBad(s)) spdlog::error("MasslessPropMomenta(): Value is {}",s);
   return s;
 }
 
 double apes::MassivePropWeight
 (double m,double g,double smin,double smax,double s,double &ran)
 {
-  // if (s<smin || s>smax)
-  //   msg_Error()<<METHOD<<"(): Value out of bounds: "
-  // 	       <<smin<<" .. " <<smax<<" vs. "<<s<< std::endl;
+  if (s<smin || s>smax) spdlog::error("MassivePropWeight(): Value out of bounds: {} .. {} vs. {}",smin,smax,s);
   double m2(m*m), mw(m*g);
   double ymax(atan((smin-m2)/mw)), ymin(atan((smax-m2)/mw));
   double y(atan((s-m2)/mw));
   ran=(y-ymin)/(ymax-ymin);
   double w(mw/((s-m2)*(s-m2)+mw*mw));
   w=(ymin-ymax)/w;
-  // if (IsBad(w)) msg_Error()<<METHOD<<"(): Weight is "<<w<<std::endl;
+  if (IsBad(w)) spdlog::error("MassivePropWeight(): Weight is {}",w);
   return 1./w;
 }
 
@@ -91,20 +88,18 @@ double apes::MassivePropMomenta
   double m2(m*m), mw(m*g), s;
   double ymax(atan((smin-m2)/mw)), ymin(atan((smax-m2)/mw));
   s=m2+mw*tan(ymin+ran*(ymax-ymin));
-  // if (IsBad(s)) msg_Error()<<METHOD<<"(): Value is "<<s<<std::endl;
+  if (IsBad(s)) spdlog::error("MassivePropMomenta(): Value is {}",s);
   return s;
 }
 
 double apes::ThresholdWeight
 (double sexp,double m,double smin,double smax,double s,double &ran)
 {
-  // if (s<smin || s>smax)
-  //   msg_Error()<<METHOD<<"(): Value out of bounds: "
-  // 	       <<smin<<" .. " <<smax<<" vs. "<<s<< std::endl;
+  if (s<smin || s>smax) spdlog::error("ThresholdWeight(): Value out of bounds: {} .. {} vs. {}",smin,smax,s);
   double m2(m*m), sg(sqrt(s*s+m2*m2));
   double sgmin(sqrt(smin*smin+m2*m2)), sgmax(sqrt(smax*smax+m2*m2));
   double w=PeakedWeight(0.,sexp,sgmin,sgmax,sg,1,ran)/(s*pow(sg,-sexp-1.));
-  // if (IsBad(w)) msg_Error()<<METHOD<<"(): Weight is "<<w<<std::endl;
+  if (IsBad(w)) spdlog::error("ThresholdWeight(): Weight is {}",w);
   return 1./w;
 }
 
@@ -114,11 +109,11 @@ double apes::ThresholdMomenta
   double m2(m*m);
   double sgmin(sqrt(smin*smin+m2*m2)), sgmax(sqrt(smax*smax+m2*m2));
   double s(sqrt(sqr(PeakedDist(0.,sexp,sgmin,sgmax,1,ran))-m2*m2));
-  // if (IsBad(s)) msg_Error()<<METHOD<<"(): Value is "<<s<<std::endl;
+  if (IsBad(s)) spdlog::error("ThresholdMomenta(): Value is {}",s);
   return s;
 }
 
-void apes::Isotropic2Momenta
+void apes::SChannelMomenta
 (FourVector p,double s1,double s2,FourVector &p1,FourVector &p2,double ran1,
  double ran2,double ctmin,double ctmax,const FourVector &_xref)
 {
@@ -137,7 +132,7 @@ void apes::Isotropic2Momenta
   p2=p-p1;
 }
 
-double apes::Isotropic2Weight
+double apes::SChannelWeight
 (const FourVector &p1, const FourVector &p2,double &ran1, double &ran2,
  double ctmin, double ctmax,const FourVector &_xref)
 {
@@ -157,7 +152,7 @@ double apes::Isotropic2Weight
   if (ran2<0.) ran2+=1.;
   double w((ctmax-ctmin)/2.);
   w*=M_PI*SqLam(p.Magnitude2(),p1.Magnitude2(),p2.Magnitude2())/2.;
-  // if (IsBad(w)) msg_Error()<<METHOD<<"(): Weight is "<<w<<"."<<std::endl;
+  if (IsBad(w)) spdlog::error("SChannelWeight(): Weight is {}.",w);
   return 1./w;
 }
 
@@ -205,7 +200,7 @@ double apes::TChannelWeight
   double pa1(pow(a-ctmax,1.-ctexp));
   double ct(p1outh[3]/p1outh.P());
   if (ct<ctmin || ct>ctmax) {
-    // msg_Error()<<METHOD<<"(): Error in momentum mapping."<<std::endl;
+    spdlog::error("TChannelWeight(): Error in momentum mapping.");
     ran1=ran2=-1.;
     return 0.;
   }
@@ -217,6 +212,6 @@ double apes::TChannelWeight
   double aminct(a-ct);
   double w(PeakedWeight(0.,ctexp,a-ctmax,a-ctmin,aminct,1,ran1));
   w*=m1out*M_PI/(2.*rs)/pow(aminct,-ctexp);
-  // if (IsBad(w)) msg_Error()<<METHOD<<"(): Weight is "<<w<<"."<<std::endl;
+  if (IsBad(w)) spdlog::error("TChannelWeight(): Weight is {}.",w);
   return 1./w;
 }
