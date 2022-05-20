@@ -64,17 +64,17 @@ void Poincare::RotateBack(FourVector &v) const
 
 void Poincare::Lambda(FourVector &v) const
 {
-  double m2=v.Magnitude2();
-  v=v-2.0*(v*(m_l+m_t))/(m_l+m_t).Magnitude2()*(m_l+m_t)
-    +2.0*(v*m_l)/m_l.Magnitude2()*m_t;
+  double m2=v.Mass2();
+  v=v-2.0*(v*(m_l+m_t))/(m_l+m_t).Mass2()*(m_l+m_t)
+    +2.0*(v*m_l)/m_l.Mass2()*m_t;
   v[0]=Sign(v[0])*sqrt(v.P2()+m2);
 }
 
 void Poincare::LambdaBack(FourVector &v) const
 {
-  double m2=v.Magnitude2();
-  v=v-2.0*(v*(m_l+m_t))/(m_l+m_t).Magnitude2()*(m_l+m_t)
-    +2.0*(v*m_t)/m_t.Magnitude2()*m_l;
+  double m2=v.Mass2();
+  v=v-2.0*(v*(m_l+m_t))/(m_l+m_t).Mass2()*(m_l+m_t)
+    +2.0*(v*m_t)/m_t.Mass2()*m_l;
   v[0]=Sign(v[0])*sqrt(v.P2()+m2);
 }
 

@@ -117,7 +117,7 @@ void apes::SChannelMomenta
 (FourVector p,double s1,double s2,FourVector &p1,FourVector &p2,double ran1,
  double ran2,double ctmin,double ctmax,const FourVector &_xref)
 {
-  double s(p.Magnitude2()), rs(sqrt(std::abs(s)));
+  double s(p.Mass2()), rs(sqrt(std::abs(s)));
   double e1((s+s1-s2)/rs/2.), m1(sqrt(e1*e1-s1));
   double ct(ctmin+(ctmax-ctmin)*ran1), st(sqrt(1.-ct*ct));
   double phi(2.*M_PI*ran2);
@@ -125,7 +125,7 @@ void apes::SChannelMomenta
   FourVector pl(p.P2()?p:FourVector(1.,0.,0.,1.));
   Poincare cms(p), zax(pl,xref);
   FourVector n_perp(zax.PT()), l_perp(LT(pl,xref,n_perp));
-  l_perp*=1.0/sqrt(std::abs(l_perp.Magnitude2()));
+  l_perp*=1.0/sqrt(std::abs(l_perp.Mass2()));
   p1=FourVector(m1*ct*pl.Vec3()/pl.P(),e1);
   p1+=m1*st*(cos(phi)*l_perp+sin(phi)*n_perp);
   cms.BoostBack(p1);
@@ -141,7 +141,7 @@ double apes::SChannelWeight
   FourVector pl(p.P2()?p:FourVector(1.,0.,0.,1.));
   Poincare cms(p), zax(pl,xref);
   FourVector n_perp(zax.PT()), l_perp(LT(pl,xref,n_perp));
-  l_perp*=1.0/sqrt(std::abs(l_perp.Magnitude2()));
+  l_perp*=1.0/sqrt(std::abs(l_perp.Mass2()));
   cms.Boost(p1h);
   double ct(p1h.Vec3()*pl.Vec3()/sqrt(p1h.P2()*pl.P2()));
   double cp(-l_perp*p1), sp(-n_perp*p1), norm(sqrt(cp*cp+sp*sp));
@@ -151,7 +151,7 @@ double apes::SChannelWeight
   ran2=atan2(sp,cp)/(2.*M_PI);
   if (ran2<0.) ran2+=1.;
   double w((ctmax-ctmin)/2.);
-  w*=M_PI*SqLam(p.Magnitude2(),p1.Magnitude2(),p2.Magnitude2())/2.;
+  w*=M_PI*SqLam(p.Mass2(),p1.Mass2(),p2.Mass2())/2.;
   if (IsBad(w)) spdlog::error("SChannelWeight(): Weight is {}.",w);
   return 1./w;
 }
@@ -162,8 +162,8 @@ void apes::TChannelMomenta
  double ctmax,double ctmin,double ran1,double ran2)
 {
   FourVector pin(p1in+p2in);
-  double s(pin.Magnitude2()), rs(sqrt(std::abs(s)));
-  double s1in(p1in.Magnitude2()), s2in(p2in.Magnitude2());
+  double s(pin.Mass2()), rs(sqrt(std::abs(s)));
+  double s1in(p1in.Mass2()), s2in(p2in.Mass2());
   double e1in((s+s1in-s2in)/2./rs), m1in(sqrt(e1in*e1in-s1in));
   double e1out((s+s1out-s2out)/2./rs), m1out(sqrt(e1out*e1out-s1out));
   double a=(mt*mt-s1in-s1out+2.*e1in*e1out)/(2.*m1in*m1out);
@@ -185,9 +185,9 @@ double apes::TChannelWeight
  double mt,double ctexp,double ctmax,double ctmin,double &ran1,double &ran2)
 {
   FourVector pin(p1in+p2in), p1inh(p1in), p1outh(p1out);
-  double s(pin.Magnitude2()), rs(sqrt(std::abs(s)));
-  double s1in(p1in.Magnitude2()), s2in(p2in.Magnitude2());
-  double s1out(p1out.Magnitude2()), s2out(p2out.Magnitude2());
+  double s(pin.Mass2()), rs(sqrt(std::abs(s)));
+  double s1in(p1in.Mass2()), s2in(p2in.Mass2());
+  double s1out(p1out.Mass2()), s2out(p2out.Mass2());
   double e1in((s+s1in-s2in)/2./rs), m1in(sqrt(e1in*e1in-s1in));
   double e1out((s+s1out-s2out)/2./rs), m1out(sqrt(e1out*e1out-s1out));
   double a=(mt*mt-s1in-s1out+2.*e1in*e1out)/(2.*m1in*m1out);
