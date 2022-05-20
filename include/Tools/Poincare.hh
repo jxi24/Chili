@@ -25,7 +25,7 @@ namespace apes {
     void Lambda(FourVector &v) const;
     void LambdaBack(FourVector &v) const;
 
-    void Invert();  
+    void Invert();
 
     inline FourVector operator*(const FourVector &vin) const
     {
@@ -35,6 +35,12 @@ namespace apes {
       if (m_type==3) Lambda(v);
       return v;
     }
+
+    inline const FourVector &PL() const { return m_l; }
+    inline const FourVector &PT() const { return m_t; }
+
+    inline double CosTheta() const { return m_ct; }
+    inline double SinTheta() const { return m_st; }
 
   };// end of class Poincare
 

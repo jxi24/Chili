@@ -1,3 +1,3 @@
-add_library(Tools ThreeVector.cc FourVector.cc Poincare.cc)
+add_library(Tools ThreeVector.cc FourVector.cc Poincare.cc Channel_Elements.cc)
 target_link_libraries(Tools PRIVATE project_options project_warnings
                             PUBLIC spdlog::spdlog)

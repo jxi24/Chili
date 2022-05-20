@@ -14,4 +14,16 @@ T Sign(const T &a) {
   return a > 0 ? 1 : ( a < 0 ? -1 : 0 );
 }
 
+template <typename T> inline T sqr(const T &x) { return x*x; }
+
+template<typename T> inline bool IsNan(const T& x);
+template<typename T> inline bool IsBad(const T& x);
+
+template<> inline bool IsNan<double>(const double& x) {
+  return std::isnan(x)||std::isnan(-x);
+}
+template<> inline bool IsBad<double>(const double& x) {
+  return IsNan(x)||std::isinf(x)||std::isinf(-x);
+}
+
 }
