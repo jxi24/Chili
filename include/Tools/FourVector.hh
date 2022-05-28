@@ -238,6 +238,16 @@ class FourVector {
         ///@return ThreeVector: Boost vector
         ThreeVector BoostVector() const noexcept;
 
+        /// Calculate one minus the cosine of the angle between two four vectors
+        ///@param other: four vector to take one minus the cosine with
+        ///@return double: the value of on minus the cosine
+        double SmallOMCT(const FourVector& v) const noexcept;
+
+        /// Calculate the dot product between two massless four vectors
+        ///@param other: four vector to take dot product with
+        ///@return double: the value of the dot product
+        double SmallMLDP(const FourVector& v) const noexcept;
+
         /// Calculate the dot product between two four vectors
         ///@param other: four vector to take dot product with
         ///@return double: the value of the dot product

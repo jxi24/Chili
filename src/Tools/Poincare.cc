@@ -29,7 +29,7 @@ Poincare::Poincare(const FourVector &v1,const FourVector &v2,int mode):
   double tdp(m_t[l[1]]*m_l[l[1]]+m_t[l[2]]*m_l[l[2]]);
   if (tdp!=0.) m_t[l[0]]=-tdp/m_l[l[0]];
   if (m_t.P2()==0.) m_t[l[1]]=1.;
-  m_ct=-m_l*b;
+  m_omct=m_l.SmallOMCT(b);
   m_st=-m_t*b;
 }
 
@@ -52,15 +52,15 @@ void Poincare::BoostBack(FourVector &v) const
 void Poincare::Rotate(FourVector &v) const
 {
   double vx(-m_l*v), vy(-m_t*v);
-  v+=((m_ct-1.)*vx-m_st*vy)*m_l;
-  v+=(m_st*vx+(m_ct-1.)*vy)*m_t;
+  v-=(m_omct*vx+m_st*vy)*m_l;
+  v-=(-m_st*vx+m_omct*vy)*m_t;
 }
 
 void Poincare::RotateBack(FourVector &v) const
 {
   double vx(-m_l*v), vy(-m_t*v);
-  v+=((m_ct-1.)*vx+m_st*vy)*m_l;
-  v+=(-m_st*vx+(m_ct-1.)*vy)*m_t;
+  v-=(m_omct*vx-m_st*vy)*m_l;
+  v-=(m_st*vx+m_omct*vy)*m_t;
 }
 
 void Poincare::Lambda(FourVector &v) const
