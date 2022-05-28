@@ -4,8 +4,8 @@
 
 using namespace apes;
 
-Poincare::Poincare(const FourVector &v):
-  m_type(1), m_l(v), m_rsq(v.Mass()) {}
+Poincare::Poincare(const FourVector &v,const double &rsq):
+  m_type(1), m_l(v), m_rsq(rsq>0.?rsq:v.Mass()) {}
 
 Poincare::Poincare(const FourVector &v1,const FourVector &v2,int mode):
   m_type(mode?3:2), m_l(1.,0.,0.,0.), m_rsq(1.)

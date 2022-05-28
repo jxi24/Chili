@@ -13,7 +13,8 @@ namespace apes {
 
   public:
 
-    Poincare(const FourVector &v=FourVector(0.,0.,0.,0.));
+    Poincare(const FourVector &v=FourVector(0.,0.,0.,0.),
+	     const double &rsq=-1.);
     Poincare(const FourVector &v1,const FourVector &v2,int mode=0);
  
     void Boost(FourVector &v) const;
