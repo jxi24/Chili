@@ -59,7 +59,7 @@ double FourVector::SmallOMCT(const FourVector& v) const noexcept {
   double ct(std::min(std::max(pq/mag,-1.),1.));
   if (ct<0.) return 1.-ct;
   double st(this->Vec3().Cross(v.Vec3()).P()/mag);
-  double st2(st/(2.*cos(acos(ct)/2.)));
+  double st2(st/(2.*sqrt((ct+1)/2.)));
   return 2.*st2*st2;
 }
 
