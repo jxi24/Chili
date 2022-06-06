@@ -89,7 +89,7 @@ void Poincare::Invert()
 FourVector Poincare_Sequence::operator*(const FourVector &p) const
 {
   FourVector np(p);
-  for (const_iterator pit(begin());pit!=end();++pit) np=(*pit)*np;
+  for(const auto &transform : *this) np=transform*np;
   return np;
 }
 
