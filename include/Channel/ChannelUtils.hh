@@ -12,15 +12,25 @@ inline unsigned int NextPermutation(unsigned int inp) {
 }
 
 inline bool BitIsSet(unsigned int inp, unsigned int pos) {
-  return inp & (1 << pos);
+  return inp & (1u << pos);
 }
 
-inline std::vector<bool> BitsAreSet(unsigned int inp, unsigned int size) {
-    std::vector<bool> set;
+inline std::vector<unsigned int> BitsAreSet(unsigned int inp, unsigned int size) {
+    std::vector<unsigned int> set;
     for(unsigned int i = 0; i < size; ++i) {
-        if(BitIsSet(inp, i)) set.push_back(inp & (1 << i));
+        if(BitIsSet(inp, i)) set.push_back(inp & (1u << i));
     }
     return set;
+}
+
+inline unsigned int NSetBits(unsigned int inp) {
+    unsigned int count;
+    for(count = 0; inp; count++) inp &= inp - 1; // Clear the least significant bit set
+    return count;
+}
+
+inline bool HaveCommonBitSet(unsigned int i, unsigned int j) {
+    return i & j;
 }
 
 inline bool IsPower2(unsigned int val) {

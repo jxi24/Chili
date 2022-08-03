@@ -9,7 +9,8 @@ struct ChannelNode;
 
 class FSMapper : public Mapper<FourVector> {
     public:
-        FSMapper(size_t nparts, std::vector<double> s) : m_n{nparts}, m_nout{m_n-2}, m_s{std::move(s)} {
+        FSMapper() = default;
+        FSMapper(size_t nparts, std::vector<double> s, size_t max_s=2) : m_n{nparts}, m_nout{m_n-2}, m_max_s{max_s}, m_s{std::move(s)} {
             m_p.resize(1 << m_n);
         }
         bool InitializeChannel(std::shared_ptr<ChannelNode>);
@@ -25,7 +26,7 @@ class FSMapper : public Mapper<FourVector> {
             return result.substr(0, result.size()-1);
         }
         std::string PrintPoint(ChannelNode *cur, unsigned int lid, unsigned int depth) const;
-        std::string PrintSPoint(ChannelNode *node) const;
+        std::string PrintSPoint(ChannelNode *node, unsigned int depth) const;
 
     private:
         constexpr static unsigned int m_rid = 2, m_lid = 1;
@@ -46,7 +47,7 @@ class FSMapper : public Mapper<FourVector> {
         double SChannelWeight(ChannelNode*, unsigned int, unsigned int, unsigned int, std::vector<double>&);
         void FillMomenta(ChannelNode*);
 
-        size_t m_n, m_nout;
+        size_t m_n, m_nout, m_max_s;
         std::vector<double> m_s;
         std::string m_name;
         std::shared_ptr<ChannelNode> m_nodes{};

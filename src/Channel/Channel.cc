@@ -29,25 +29,25 @@ void FSMapper::FillMomenta(ChannelNode *node) {
             m_p[node -> m_idx] += m_p[(1 << i)];
         }
     }
-    if(!apes::IsPower2(node -> m_left -> m_idx)) FillMomenta(node -> m_left.get());
-    if(!apes::IsPower2(node -> m_right -> m_idx)) FillMomenta(node -> m_right.get());
+    for(auto &child : node -> m_children)
+        if(!apes::IsPower2(child -> m_idx)) FillMomenta(child.get());
 }
 
 std::string FSMapper::PrintPoint(ChannelNode *cur, unsigned int lid, unsigned int depth) const {
     std::string result = "";
     if(depth == m_n-2) return result;
     unsigned int aid = cur -> m_idx;
-    unsigned int bid = cur -> m_left -> m_idx;
-    unsigned int cid = cur -> m_right -> m_idx;
+    unsigned int bid = cur -> m_children[0] -> m_idx;
+    unsigned int cid = cur -> m_children[1] -> m_idx;
     if(bid == lid) std::swap(aid, bid);
     else if(cid == lid) std::swap(aid, cid);
     if((cid&(lid|m_rid))==(lid|m_rid) || (aid&m_rid && bid&m_rid)) {
         std::swap(bid, cid);
-        std::swap(cur -> m_left, cur -> m_right);
+        std::swap(cur -> m_children[0], cur -> m_children[1]);
     }
     if(cid == m_rid) {
         if(!apes::IsPower2(bid)) {
-            result += PrintSPoint(cur -> m_left.get());
+            result += PrintSPoint(cur -> m_children[0].get(), 0);
             return result;
         } else {
             return result;
@@ -55,26 +55,27 @@ std::string FSMapper::PrintPoint(ChannelNode *cur, unsigned int lid, unsigned in
     }
     result += fmt::format("TChannel({} ({}), {} ({}), {} ({})),",
                           aid, cur -> m_pid,
-                          bid, cur -> m_left -> m_pid,
-                          cid, cur -> m_right -> m_pid);
-    if(!apes::IsPower2(cid)) result += PrintPoint(cur -> m_right.get(), cid, depth+1);
+                          bid, cur -> m_children[0] -> m_pid,
+                          cid, cur -> m_children[1] -> m_pid);
+    if(!apes::IsPower2(cid)) result += PrintPoint(cur -> m_children[1].get(), cid, depth+1);
     if(!apes::IsPower2(bid)) {
-        result += PrintSPoint(cur -> m_left.get());
+        result += PrintSPoint(cur -> m_children[0].get(), 0);
     }
     return result;
 }
 
 
-std::string FSMapper::PrintSPoint(ChannelNode *node) const {
+std::string FSMapper::PrintSPoint(ChannelNode *node, unsigned int depth) const {
+    // if(depth == m_max_s) return "INVALID ";
     unsigned int cid = node -> m_idx;
-    unsigned int aid = node -> m_left -> m_idx;
-    unsigned int bid = node -> m_right -> m_idx;
+    unsigned int aid = node -> m_children[0] -> m_idx;
+    unsigned int bid = node -> m_children[1] -> m_idx;
     std::string result = fmt::format("SChannel({} ({}), {} ({}), {} ({})),",
                                      cid, node -> m_pid,
-                                     aid, node -> m_left -> m_pid,
-                                     bid, node -> m_right -> m_pid);
-    if(!apes::IsPower2(aid)) result += PrintSPoint(node -> m_left.get());
-    if(!apes::IsPower2(bid)) result += PrintSPoint(node -> m_right.get());
+                                     aid, node -> m_children[0] -> m_pid,
+                                     bid, node -> m_children[1] -> m_pid);
+    for(auto &child : node -> m_children)
+        if(!apes::IsPower2(child -> m_idx)) result += PrintSPoint(child.get(), ++depth);
     return result;
 }
 
@@ -108,33 +109,33 @@ void FSMapper::BuildPoint(ChannelNode *cur, unsigned int lid, const std::vector<
         return;
     }
     unsigned int aid = cur -> m_idx;
-    unsigned int bid = cur -> m_left -> m_idx;
-    unsigned int cid = cur -> m_right -> m_idx;
+    unsigned int bid = cur -> m_children[0] -> m_idx;
+    unsigned int cid = cur -> m_children[1] -> m_idx;
     if(bid == lid) std::swap(aid, bid);
     else if(cid == lid) std::swap(aid, cid);
     if((cid&(lid|m_rid))==(lid|m_rid) || (aid&m_rid && bid&m_rid)) {
         std::swap(bid, cid);
-        std::swap(cur -> m_left, cur -> m_right);
+        std::swap(cur -> m_children[0], cur -> m_children[1]);
     }
     if(cid == m_rid) {
         if(!apes::IsPower2(bid)) {
-            BuildSPoint(cur -> m_left.get(), rans);
+            BuildSPoint(cur -> m_children[0].get(), rans);
             return;
         } else {
             return;
         }
     }
     TChannelMomenta(cur, aid, bid, cid, rans); 
-    BuildPoint(cur -> m_right.get(), cid, rans, depth+1);
+    BuildPoint(cur -> m_children[1].get(), cid, rans, depth+1);
 }
 
 void FSMapper::BuildSPoint(ChannelNode *node, const std::vector<double> &rans) {
     unsigned int cid = node -> m_idx;
-    unsigned int aid = node -> m_left -> m_idx;
-    unsigned int bid = node -> m_right -> m_idx;
+    unsigned int aid = node -> m_children[0] -> m_idx;
+    unsigned int bid = node -> m_children[1] -> m_idx;
     SChannelMomenta(node, aid, bid, cid, rans);
-    if(!apes::IsPower2(aid)) BuildSPoint(node -> m_left.get(), rans);
-    if(!apes::IsPower2(bid)) BuildSPoint(node -> m_right.get(), rans);
+    if(!apes::IsPower2(aid)) BuildSPoint(node -> m_children[0].get(), rans);
+    if(!apes::IsPower2(bid)) BuildSPoint(node -> m_children[1].get(), rans);
 }
 
 double FSMapper::BuildWeight(ChannelNode *cur, unsigned int lid, std::vector<double> &rans, unsigned int depth) {
@@ -143,35 +144,35 @@ double FSMapper::BuildWeight(ChannelNode *cur, unsigned int lid, std::vector<dou
         return wgt;
     }
     unsigned int aid = cur -> m_idx;
-    unsigned int bid = cur -> m_left -> m_idx;
-    unsigned int cid = cur -> m_right -> m_idx;
+    unsigned int bid = cur -> m_children[0] -> m_idx;
+    unsigned int cid = cur -> m_children[1] -> m_idx;
     if(bid == lid) std::swap(aid, bid);
     else if(cid == lid) std::swap(aid, cid);
     if((cid&(lid|m_rid))==(lid|m_rid) || (aid&m_rid && bid&m_rid)) {
         std::swap(bid, cid);
-        std::swap(cur -> m_left, cur -> m_right);
+        std::swap(cur -> m_children[0], cur -> m_children[1]);
     }
     if(cid == m_rid) {
         if(!apes::IsPower2(bid)) {
-            wgt *= BuildSWeight(cur -> m_left.get(), rans);
+            wgt *= BuildSWeight(cur -> m_children[0].get(), rans);
             return wgt;
         } else {
             return wgt;
         }
     }
     wgt *= TChannelWeight(cur, aid, bid, cid, rans); 
-    wgt *= BuildWeight(cur -> m_right.get(), cid, rans, depth+1);
+    wgt *= BuildWeight(cur -> m_children[1].get(), cid, rans, depth+1);
     return wgt;
 }
 
 double FSMapper::BuildSWeight(ChannelNode *node, std::vector<double> &rans) {
     double wgt = 1.0;
     unsigned int cid = node -> m_idx;
-    unsigned int aid = node -> m_left -> m_idx;
-    unsigned int bid = node -> m_right -> m_idx;
+    unsigned int aid = node -> m_children[0] -> m_idx;
+    unsigned int bid = node -> m_children[1] -> m_idx;
     wgt *= SChannelWeight(node, aid, bid, cid, rans);
-    if(!apes::IsPower2(aid)) wgt *= BuildSWeight(node -> m_left.get(), rans);
-    if(!apes::IsPower2(bid)) wgt *= BuildSWeight(node -> m_right.get(), rans);
+    if(!apes::IsPower2(aid)) wgt *= BuildSWeight(node -> m_children[0].get(), rans);
+    if(!apes::IsPower2(bid)) wgt *= BuildSWeight(node -> m_children[1].get(), rans);
     return wgt;
 }
 
@@ -327,8 +328,8 @@ void FSMapper::SChannelMomenta(ChannelNode *node, unsigned int aid, unsigned int
     // m_p[(1<<m_n)-1-bid] = m_p[bid];
     // spdlog::trace("{}", name);
     // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", cid, node -> m_pid, m_p[cid], m_p[cid].Mass());
-    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", lid, node -> m_left -> m_pid, m_p[lid], m_p[lid].Mass());
-    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", rid, node -> m_right -> m_pid, m_p[rid], m_p[rid].Mass());
+    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", lid, node -> m_children[0] -> m_pid, m_p[lid], m_p[lid].Mass());
+    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", rid, node -> m_children[1] -> m_pid, m_p[rid], m_p[rid].Mass());
     // spdlog::trace("  sl = {}, sr = {}", sl, sr);
     // spdlog::trace("  iran = {}", iran);
 }
@@ -354,8 +355,8 @@ double FSMapper::SChannelWeight(ChannelNode *node, unsigned int aid, unsigned in
     //                                            + std::to_string(bid) + ")";
     // spdlog::trace("{}", name);
     // spdlog::trace("  m_p[{}] ({}) = {}", cid, node -> m_pid, m_p[cid]);
-    // spdlog::trace("  m_p[{}] ({}) = {}", lid, node -> m_left -> m_pid, m_p[lid]);
-    // spdlog::trace("  m_p[{}] ({}) = {}", rid, node -> m_right -> m_pid, m_p[rid]);
+    // spdlog::trace("  m_p[{}] ({}) = {}", lid, node -> m_children[0] -> m_pid, m_p[lid]);
+    // spdlog::trace("  m_p[{}] ({}) = {}", rid, node -> m_children[1] -> m_pid, m_p[rid]);
     // spdlog::trace("  sl = {}, sr = {}", sl, sr);
     // spdlog::trace("  iran = {}", iran);
     // spdlog::trace("  wgt = {}", wgt);
@@ -365,10 +366,10 @@ double FSMapper::SChannelWeight(ChannelNode *node, unsigned int aid, unsigned in
 ChannelNode *FSMapper::LocateNode(ChannelNode *node, unsigned int id) {
   if (node->m_idx == id)
     return node;
-  if (node->m_left) {
-    auto result = LocateNode(node->m_left.get(), id);
-    if (!result && node->m_right) {
-      result = LocateNode(node->m_right.get(), id);
+  if (node->m_children[0]) {
+    auto result = LocateNode(node->m_children[0].get(), id);
+    if (!result && node->m_children[1]) {
+      result = LocateNode(node->m_children[1].get(), id);
     }
     return result;
   }
