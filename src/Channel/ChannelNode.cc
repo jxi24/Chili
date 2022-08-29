@@ -110,11 +110,6 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(const std::vector
                         info.width = model.Width(elm);
                         currentComponents[cur].insert(info);
                     }
-                    double smin1 = pow(sqrt(cuts.smin[subCur1]) + sqrt(cuts.smin[subCur2]), 2);
-                    double deltaR = cuts.deltaR[{currentComponents[subCur1].begin() -> pid,
-                                                 currentComponents[subCur2].begin() -> pid}];
-                    double smin2 = cuts.ptmin[subCur1]*cuts.ptmin[subCur2]*2/M_PI/M_PI*pow(deltaR, 2);
-                    cuts.smin[cur] = std::max(smin1, smin2);
                     cuts.ptmin[cur] = 0;
                     cuts.etamax[cur] = 99;
                     auto lparts = currentComponents[subCur1];
@@ -267,22 +262,39 @@ std::unique_ptr<FSMapper> apes::ConstructChannel(ChannelDescription channel, con
     // Create lambda to generate masses for decays
     size_t iran = 0, iran2 = 0;
     auto gen_decays = [&](std::unordered_map<unsigned int, double> &masses2, const std::vector<double> &rans) {
+        spdlog::info("Masses:");
         for(const auto &decay : channel.decays) {
-            double smin = cuts.smin.at(decay.first.idx);
+            const auto part1 = decay.second.first;
+            const auto part2 = decay.second.second;
+            double smin1 = pow(sqrt(masses2[part1.idx])
+                              + sqrt(masses2[part2.idx]), 2);
+            double deltaR = cuts.deltaR.at({part1.pid, part2.pid});
+            double smin2 = cuts.ptmin.at(part1.idx)*cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
+            double smin = std::max(smin1, smin2);
             double smax = SMax(sqrts, cuts, decay.first.idx);
+            spdlog::info("smin1 = {}, smin2 = {}", smin1, smin2);
             if(std::abs(decay.first.mass) < 1e-16) {
                 masses2[decay.first.idx] = MasslessPropMomenta(smin, smax, rans[iran++]); 
             } else {
                 masses2[decay.first.idx] = MassivePropMomenta(decay.first.mass, decay.first.width,
                                                               smin, smax, rans[iran++]); 
             }
+            spdlog::info("  {}: {}", decay.first.idx, sqrt(masses2[decay.first.idx]));
         }
     };
     auto wgt_decays = [&](const std::unordered_map<unsigned int, FourVector> &mom, std::vector<double> &rans) {
         double wgt = 1;
         for(const auto &decay : channel.decays) {
-            double smin = cuts.smin.at(decay.first.idx);
+            const auto part1 = decay.second.first;
+            const auto part2 = decay.second.second;
+            double smin1 = pow(mom.at(part1.idx).Mass()
+                              + mom.at(part2.idx).Mass(), 2);
+            if(std::isnan(smin1)) smin1 = 0;
+            double deltaR = cuts.deltaR.at({part1.pid, part2.pid});
+            double smin2 = cuts.ptmin.at(part1.idx)*cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
+            double smin = std::max(smin1, smin2);
             double smax = SMax(sqrts, cuts, decay.first.idx);
+            spdlog::info("smin1 = {}, smin2 = {}", smin1, smin2);
             if(std::abs(decay.first.mass) < 1e-16) {
                 wgt *= MasslessPropWeight(smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran2++]); 
             } else {
