@@ -1,13 +1,19 @@
 #pragma once
 
-#include "Channel/Channel.hh"
+// #include "Channel/Channel.hh"
 #include "Model/Model.hh"
 #include "Tools/Cuts.hh"
+#include "fmt/format.h"
 #include <map>
 #include <memory>
+#include <set>
+#include <string>
+#include <sstream>
 #include <vector>
 
 namespace apes {
+
+class FSMapper;
 
 // TODO: Remove channel node from everywhere
 struct ChannelNode {
@@ -73,7 +79,6 @@ inline std::string ToString(ChannelDescription channel) {
 
 std::string ToString(DecayChain chain);
 
-std::vector<std::unique_ptr<FSMapper>> ConstructChannels(const std::vector<int> &flavs, const Model &model, size_t smax=2);
-std::unique_ptr<FSMapper> ConstructChannel(ChannelDescription, const Cuts&);
+std::vector<std::unique_ptr<FSMapper>> ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax=2);
 
 }

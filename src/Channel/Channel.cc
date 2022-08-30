@@ -1,382 +1,224 @@
 #include "Channel/Channel.hh"
-#include "Channel/ChannelUtils.hh"
-#include "Channel/ChannelNode.hh"
+#include "Tools/ChannelElements.hh"
 
 using apes::FSMapper;
-using apes::ChannelNode;
 
-double FSMapper::SCut(unsigned int id) {
-    if(id&3) {
-        id = (1u << m_n) - 1u - id; 
-    }
-    double result = 0;
-    for(unsigned int i = 0; i < m_n; ++i) {
-        if(apes::BitIsSet(id, i)) {
-            result += sqrt(m_s[i]);
-        }
-    }
-    return result*result;
-}
-
-unsigned int FSMapper::SId(unsigned int id) {
-    return (id&3)==3?(1u<<m_n)-1u-id:id;
-}
-
-void FSMapper::FillMomenta(ChannelNode *node) {
-    m_p[node -> m_idx] = FourVector{};
-    for(unsigned int i = 0; i < m_n; ++i) {
-        if(apes::BitIsSet(node -> m_idx, i)) {
-            m_p[node -> m_idx] += m_p[(1 << i)];
-        }
-    }
-    for(auto &child : node -> m_children)
-        if(!apes::IsPower2(child -> m_idx)) FillMomenta(child.get());
-}
-
-std::string FSMapper::PrintPoint(ChannelNode *cur, unsigned int lid, unsigned int depth) const {
-    std::string result = "";
-    if(depth == m_n-2) return result;
-    unsigned int aid = cur -> m_idx;
-    unsigned int bid = cur -> m_children[0] -> m_idx;
-    unsigned int cid = cur -> m_children[1] -> m_idx;
-    if(bid == lid) std::swap(aid, bid);
-    else if(cid == lid) std::swap(aid, cid);
-    if((cid&(lid|m_rid))==(lid|m_rid) || (aid&m_rid && bid&m_rid)) {
-        std::swap(bid, cid);
-        std::swap(cur -> m_children[0], cur -> m_children[1]);
-    }
-    if(cid == m_rid) {
-        if(!apes::IsPower2(bid)) {
-            result += PrintSPoint(cur -> m_children[0].get(), 0);
-            return result;
-        } else {
-            return result;
-        }
-    }
-    result += fmt::format("TChannel({} ({}), {} ({}), {} ({})),",
-                          aid, cur -> m_pid,
-                          bid, cur -> m_children[0] -> m_pid,
-                          cid, cur -> m_children[1] -> m_pid);
-    if(!apes::IsPower2(cid)) result += PrintPoint(cur -> m_children[1].get(), cid, depth+1);
-    if(!apes::IsPower2(bid)) {
-        result += PrintSPoint(cur -> m_children[0].get(), 0);
-    }
-    return result;
-}
-
-
-std::string FSMapper::PrintSPoint(ChannelNode *node, unsigned int depth) const {
-    // if(depth == m_max_s) return "INVALID ";
-    unsigned int cid = node -> m_idx;
-    unsigned int aid = node -> m_children[0] -> m_idx;
-    unsigned int bid = node -> m_children[1] -> m_idx;
-    std::string result = fmt::format("SChannel({} ({}), {} ({}), {} ({})),",
-                                     cid, node -> m_pid,
-                                     aid, node -> m_children[0] -> m_pid,
-                                     bid, node -> m_children[1] -> m_pid);
-    for(auto &child : node -> m_children)
-        if(!apes::IsPower2(child -> m_idx)) result += PrintSPoint(child.get(), ++depth);
-    return result;
-}
-
-void FSMapper::GeneratePoint(std::vector<FourVector> &p, const std::vector<double> &rans) {
+void FSMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
+    mom.resize(m_ntot);
     iran = 0;
-    m_p[1] = p[0];
-    m_p[2] = p[1];
-    auto lid = static_cast<unsigned int>((1 << m_n) - 2);
-    m_p[lid] = p[0];
-    BuildPoint(m_nodes.get(), lid, rans, 0);
-    for(size_t i = 2; i < m_n; ++i) {
-        p[i] = m_p[1 << i];
+    SparseMass masses2;
+    SparseMom tmp_mom;
+    for(size_t i = 0; i < m_nout; ++i) {
+        masses2[1 << (i + 2)] = m_cuts.sexternal[i];
     }
-    // Mapper::Print(__PRETTY_FUNCTION__, p, rans);
+    GenDecays(masses2, rans);
+    GenTChan(tmp_mom, rans, masses2);
+    GenSChan(tmp_mom, rans, masses2);
+    for(size_t i = 0; i < mom.size(); ++i) {
+        mom[i] = tmp_mom[1 << i];
+    }
+    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
 
-double FSMapper::GenerateWeight(const std::vector<FourVector> &p, std::vector<double> &rans) {
-    if(rans.size() != NDims()) rans.resize(NDims());
+double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) {
+    rans.resize(NDims());
     iran = 0;
-    for(size_t i = 0; i < m_n; ++i) m_p[1 << i] = p[i];
-    FillMomenta(m_nodes.get());
-    auto lid = static_cast<unsigned int>((1 << m_n) - 2);
-    m_p[lid] = p[0];
-    double wgt = BuildWeight(m_nodes.get(), lid, rans, 0);
-    if(wgt != 0) wgt = 1.0/wgt/pow(2.0*M_PI, 3.0*static_cast<double>(m_nout)-4);
+    double wgt = 1.0;
+    SparseMom tmp_mom;
+    for(size_t i = 0; i < mom.size(); ++i) {
+        tmp_mom[1 << i] = mom[i];
+    }
+    for(const auto &part : m_channel.decays) {
+        tmp_mom[part.first.idx] = tmp_mom[part.second.first.idx] + tmp_mom[part.second.second.idx];
+    }
+    wgt *= WgtDecays(tmp_mom, rans);
+    wgt *= WgtTChan(tmp_mom, rans);
+    wgt *= WgtSChan(tmp_mom, rans);
+    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    spdlog::info("  Weight = {}", wgt);
     return 1.0/wgt;
 }
 
-void FSMapper::BuildPoint(ChannelNode *cur, unsigned int lid, const std::vector<double> &rans, unsigned int depth) {
-    if(depth == m_n-2) {
-        return;
-    }
-    unsigned int aid = cur -> m_idx;
-    unsigned int bid = cur -> m_children[0] -> m_idx;
-    unsigned int cid = cur -> m_children[1] -> m_idx;
-    if(bid == lid) std::swap(aid, bid);
-    else if(cid == lid) std::swap(aid, cid);
-    if((cid&(lid|m_rid))==(lid|m_rid) || (aid&m_rid && bid&m_rid)) {
-        std::swap(bid, cid);
-        std::swap(cur -> m_children[0], cur -> m_children[1]);
-    }
-    if(cid == m_rid) {
-        if(!apes::IsPower2(bid)) {
-            BuildSPoint(cur -> m_children[0].get(), rans);
-            return;
+void FSMapper::GenDecays(SparseMass &masses2, const std::vector<double> &rans) {
+    for(const auto &decay : m_channel.decays) {
+        const auto part1 = decay.second.first;
+        const auto part2 = decay.second.second;
+        double smin1 = pow(sqrt(masses2[part1.idx])
+                          + sqrt(masses2[part2.idx]), 2);
+        double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
+        double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
+        double smin = std::max(smin1, smin2);
+        double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
+        if(std::abs(decay.first.mass) < 1e-16) {
+            masses2[decay.first.idx] = MasslessPropMomenta(smin, smax, rans[iran++]); 
         } else {
-            return;
+            masses2[decay.first.idx] = MassivePropMomenta(decay.first.mass, decay.first.width,
+                                                          smin, smax, rans[iran++]); 
         }
     }
-    TChannelMomenta(cur, aid, bid, cid, rans); 
-    BuildPoint(cur -> m_children[1].get(), cid, rans, depth+1);
 }
 
-void FSMapper::BuildSPoint(ChannelNode *node, const std::vector<double> &rans) {
-    unsigned int cid = node -> m_idx;
-    unsigned int aid = node -> m_children[0] -> m_idx;
-    unsigned int bid = node -> m_children[1] -> m_idx;
-    SChannelMomenta(node, aid, bid, cid, rans);
-    if(!apes::IsPower2(aid)) BuildSPoint(node -> m_children[0].get(), rans);
-    if(!apes::IsPower2(bid)) BuildSPoint(node -> m_children[1].get(), rans);
-}
-
-double FSMapper::BuildWeight(ChannelNode *cur, unsigned int lid, std::vector<double> &rans, unsigned int depth) {
-    double wgt = 1.0;
-    if(depth == m_n-2) {
-        return wgt;
-    }
-    unsigned int aid = cur -> m_idx;
-    unsigned int bid = cur -> m_children[0] -> m_idx;
-    unsigned int cid = cur -> m_children[1] -> m_idx;
-    if(bid == lid) std::swap(aid, bid);
-    else if(cid == lid) std::swap(aid, cid);
-    if((cid&(lid|m_rid))==(lid|m_rid) || (aid&m_rid && bid&m_rid)) {
-        std::swap(bid, cid);
-        std::swap(cur -> m_children[0], cur -> m_children[1]);
-    }
-    if(cid == m_rid) {
-        if(!apes::IsPower2(bid)) {
-            wgt *= BuildSWeight(cur -> m_children[0].get(), rans);
-            return wgt;
+double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
+    double wgt = 1;
+    for(const auto &decay : m_channel.decays) {
+        const auto part1 = decay.second.first;
+        const auto part2 = decay.second.second;
+        double smin1 = pow(mom.at(part1.idx).Mass()
+                          + mom.at(part2.idx).Mass(), 2);
+        if(std::isnan(smin1)) smin1 = 0;
+        double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
+        double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
+        double smin = std::max(smin1, smin2);
+        double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
+        if(std::abs(decay.first.mass) < 1e-16) {
+            wgt *= MasslessPropWeight(smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
         } else {
-            return wgt;
+            wgt *= MassivePropWeight(decay.first.mass, decay.first.width,
+                                     smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
         }
     }
-    wgt *= TChannelWeight(cur, aid, bid, cid, rans); 
-    wgt *= BuildWeight(cur -> m_children[1].get(), cid, rans, depth+1);
     return wgt;
 }
 
-double FSMapper::BuildSWeight(ChannelNode *node, std::vector<double> &rans) {
-    double wgt = 1.0;
-    unsigned int cid = node -> m_idx;
-    unsigned int aid = node -> m_children[0] -> m_idx;
-    unsigned int bid = node -> m_children[1] -> m_idx;
-    wgt *= SChannelWeight(node, aid, bid, cid, rans);
-    if(!apes::IsPower2(aid)) wgt *= BuildSWeight(node -> m_children[0].get(), rans);
-    if(!apes::IsPower2(bid)) wgt *= BuildSWeight(node -> m_children[1].get(), rans);
+void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const SparseMass &masses2) {
+    FourVector psum{};
+    // Handle the first n-1 outgoing t-channel particles
+    for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
+        const double ran = rans[iran++];
+        double pt = 2*m_ptmin[i]*m_ptmax*ran/(2*m_ptmin[i]+m_ptmax*(1-ran));
+        double etamax = m_sqrts/2/pt; 
+        etamax = log(etamax+sqrt(etamax*etamax - 1));
+        etamax = std::min(etamax, m_cuts.etamax.at(m_channel.info[i].idx));
+        double y = etamax*(2*rans[iran++]-1);
+        double sinhy = sinh(y);
+        double coshy = sqrt(1+sinhy*sinhy);
+        double phi = 2*M_PI*rans[iran++];
+        double mt = sqrt(pt*pt + masses2.at(m_channel.info[i].idx));
+        mom[m_channel.info[i].idx] = {mt*coshy, pt*cos(phi), pt*sin(phi), mt*sinhy};
+        psum += mom[m_channel.info[i].idx];
+    }
+
+    // Handle initial states and last t-channel momentum
+    double mjets2 = psum.Mass2();
+    double ybar = 0.5*log((psum.E() + psum.Pz())/(psum.E() - psum.Pz()));
+    double ptsum2 = psum.Pt2();
+    double m2 = masses2.at(m_channel.info.back().idx);
+    double plstarsq = (pow(m_sqrts*m_sqrts-m2-mjets2, 2)
+                       -4*(mjets2*m2+ptsum2*m_sqrts*m_sqrts))/(4*m_sqrts*m_sqrts);
+    double plstar = sqrt(plstarsq);
+    double Estar = sqrt(plstarsq+ptsum2+mjets2);
+    double y5starmax = 0.5*log((Estar+plstar)/(Estar-plstar));
+
+    double etamax = ybar+y5starmax;
+    double etamin = ybar-y5starmax;
+    double dely = etamax-etamin;
+    double ycm = etamin+rans[iran++]*dely;
+    double sinhy = sinh(ycm);
+    double coshy = sqrt(1+sinhy*sinhy);
+    
+    double sumpst = ptsum2+pow(psum.Pz()*coshy-psum.E()*sinhy, 2);
+    double q0st = sqrt(m2+sumpst);
+    double rshat = q0st + sqrt(mjets2+sumpst);
+    mom[3] = {rshat*coshy, 0, 0, rshat*sinhy};
+
+    std::array<double, 2> xx;
+    xx[1] = (mom[3].E()+mom[3].Pz())/m_sqrts;
+    xx[2] = (mom[3].E()-mom[3].Pz())/m_sqrts;
+
+    mom[m_channel.info.back().idx] = mom[3] - psum;
+    mom[1] = {-xx[1]*m_sqrts/2, 0, 0, -xx[1]*m_sqrts/2};
+    mom[2] = {-xx[2]*m_sqrts/2, 0, 0, xx[2]*m_sqrts/2};
+}
+
+double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
+    double wgt = 2*M_PI;
+    FourVector psum{};
+    for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
+        wgt /= 16/pow(M_PI, 3);
+        double pt = mom.at(m_channel.info[i].idx).Pt();
+        wgt *= pt*m_ptmax/2/m_ptmin[i]/(2*m_ptmin[i]+m_ptmax)*pow(2*m_ptmin[i]+pt, 2);
+        rans[iran++] = pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
+        double etamax = m_sqrts/2/pt; 
+        etamax = log(etamax+sqrt(etamax*etamax - 1));
+        etamax = std::min(etamax, m_cuts.etamax.at(m_channel.info[i].idx));
+        wgt *= 2*etamax*2*M_PI;
+        double y = mom.at(m_channel.info[i].idx).Rapidity();
+        double phi = mom.at(m_channel.info[i].idx).Phi();
+        rans[iran++] = (y/etamax + 1)/2;
+        rans[iran++] = phi/2/M_PI;
+        psum += mom.at(m_channel.info[i].idx);
+    }
+    // Handle initial states and last t-channel momentum
+    double mjets2 = psum.Mass2();
+    double ybar = 0.5*log((psum.E() + psum.Pz())/(psum.E() - psum.Pz()));
+    double ptsum2 = psum.Pt2();
+    double m2 = mom.at(m_channel.info.back().idx).Mass2();
+    double plstarsq = (pow(m_sqrts*m_sqrts-m2-mjets2, 2)
+                       -4*(mjets2*m2+ptsum2*m_sqrts*m_sqrts))/(4*m_sqrts*m_sqrts);
+    double plstar = sqrt(plstarsq);
+    double Estar = sqrt(plstarsq+ptsum2+mjets2);
+    double y5starmax = 0.5*log((Estar+plstar)/(Estar-plstar));
+
+    double etamax = ybar+y5starmax;
+    double etamin = ybar-y5starmax;
+    double dely = etamax-etamin;
+    wgt *= dely;
+    double ycm = (mom.at(1) + mom.at(2)).Rapidity();
+    rans[iran++] = (ycm-etamin)/dely;
+
     return wgt;
 }
 
-// TODO: handle propagators
-// double FSMapper::PropMomenta(ChannelNode *node, unsigned int id, double smin, double smax, double ran) {
-double FSMapper::PropMomenta(ChannelNode *, unsigned int , double , double , double ) {
-    return 1;
-    // auto foundNode = LocateNode(node, id);
-    // if(!foundNode) {
-    //     spdlog::trace("ThresholdMomenta({}, {}, {}, {}) = {}",
-    //                   0.01, smin, smax, ran,
-    //                   CE.ThresholdMomenta(m_salpha, 0.01, smin, smax, ran));
-    //     return CE.ThresholdMomenta(m_salpha, 0.01, smin, smax, ran);
-    // }
-    // auto flav = foundNode -> m_pid;
-    // if(flav.Mass() == 0) {
-    //     spdlog::trace("MasslessPropMomenta({}, {}, {}) = {}",
-    //                   smin, smax, ran,
-    //                   CE.MasslessPropMomenta(m_salpha, smin, smax, ran));
-    //     return CE.MasslessPropMomenta(m_salpha, smin, smax, ran);
-    // } else {
-    //     spdlog::trace("MassivePropMomenta({}, {}, {}, {}, {}) = {}",
-    //                   flav.Mass(), flav.Width(), smin, smax, ran,
-    //                   CE.MassivePropMomenta(flav.Mass(), flav.Width(), 1, smin, smax, ran));
-    //     if(smax < flav.Mass()*flav.Mass()/m_scutoff) return smin + ran*(smax-smin);
-    //     return CE.MassivePropMomenta(flav.Mass(), flav.Width(), 1, smin, smax, ran);
-    // }
+void FSMapper::DecayParts(ParticleInfo ab, ParticleInfo a, ParticleInfo b,
+                          SparseMom &mom, const std::vector<double> &rans, const SparseMass &masses2) {
+    double ran1 = rans[iran++];
+    double ran2 = rans[iran++];
+    mom[a.idx] = FourVector();
+    mom[b.idx] = FourVector();
+    SChannelMomenta(mom[ab.idx], masses2.at(a.idx), masses2.at(b.idx), mom[a.idx], mom[b.idx],
+                    ran1, ran2, -1, 1);
+    if(!IsPower2(a.idx)) {
+        auto decays = m_channel.decays.at(a);
+        DecayParts(a, decays.first, decays.second, mom, rans, masses2);
+    }
+    if(!IsPower2(b.idx)) {
+        auto decays = m_channel.decays.at(b);
+        DecayParts(b, decays.first, decays.second, mom, rans, masses2);
+    }
 }
 
-// TODO: handle propagators
-// double FSMapper::PropWeight(ChannelNode *node, unsigned int id, double smin, double smax, double s, double &ran) {
-double FSMapper::PropWeight(ChannelNode *, unsigned int , double , double , double , double &) {
-    return 1;
-    // auto foundNode = LocateNode(node, id);
-    // if(!foundNode) {
-    //     double wgt = CE.ThresholdWeight(m_salpha, 0.01, smin, smax, s, ran);
-    //     spdlog::trace("ThresholdWeight = {}", wgt);
-    //     return wgt;
-    // }
-    // auto flav = foundNode -> m_pid;
-    // double wgt = 1.0;
-    // if(flav.Mass() == 0) {
-    //     wgt = CE.MasslessPropWeight(m_salpha, smin, smax, s, ran);
-    //     spdlog::trace("MasslessPropWeight = {}", wgt);
-    // } else {
-    //     if(smax < flav.Mass()*flav.Mass()/m_scutoff) {
-    //         wgt = 1.0/(smax-smin);
-    //         ran = (s-smin)/(smax-smin);
-    //     } else {
-    //         wgt = CE.MassivePropWeight(flav.Mass(), flav.Width(), 1, smin, smax, s, ran);
-    //     }
-    //     spdlog::trace("MassivePropWeight = {}, m = {}, g = {}, smin = {}, smax = {}, s = {}",
-    //                   wgt, flav.Mass(), flav.Width(), smin, smax, s);
-    // }
-
-    // return wgt;
-}
-
-void FSMapper::TChannelMomenta(ChannelNode *node, unsigned int aid, unsigned int bid, unsigned int cid,
-                              const std::vector<double> &rans) {
-    unsigned int pid = aid - (m_rid+bid);
-    const std::string name = "TChannelMomenta(" + std::to_string(aid) + ", "
-                                                + std::to_string(bid) + ", "
-                                                + std::to_string(cid) + ", "
-                                                + std::to_string(pid) + ")";
-    double se = SCut(bid), sp = SCut(pid);
-    double rtsmax = (m_p[aid]+m_p[m_rid]).Mass();
-    if(!apes::IsPower2(bid)) {
-        double smin = se, smax = pow(rtsmax - sqrt(sp), 2);
-        se = PropMomenta(node, bid, smin, smax, rans[iran++]); 
+double FSMapper::WgtDecayParts(ParticleInfo a, ParticleInfo b, const SparseMom &mom, std::vector<double> &rans) {
+    double ran1, ran2;
+    double wgt = SChannelWeight(mom.at(a.idx), mom.at(b.idx), ran1, ran2);
+    rans[iran++] = ran1;
+    rans[iran++] = ran2;
+    if(!IsPower2(a.idx)) {
+        auto decays = m_channel.decays.at(a);
+        wgt *= WgtDecayParts(decays.first, decays.second, mom, rans);
     }
-    if(!apes::IsPower2(pid)) {
-        double smin = sp, smax = pow(rtsmax - sqrt(se), 2);
-        sp = PropMomenta(node, pid, smin, smax, rans[iran++]);
+    if(!IsPower2(b.idx)) {
+        auto decays = m_channel.decays.at(b);
+        wgt *= WgtDecayParts(decays.first, decays.second, mom, rans);
     }
-    // TODO: Look up correct mass
-    // double mass = ATOOLS::Flavour((kf_code)(LocateNode(node, pid+m_rid) -> m_pid)).Mass(); 
-    // CE.TChannelMomenta(m_p[aid], m_p[m_rid], m_p[bid], m_p[pid], se, sp, mass,
-    //                    m_alpha, m_ctmax, m_ctmin, m_amct, 0, rans[iran], rans[iran+1]);
-    // iran += 2;
-    // m_p[cid] = m_p[aid] - m_p[bid];
-    // spdlog::trace("{}", name);
-    // spdlog::trace("  m_p[{}] = {}, m = {}", aid, m_p[aid], m_p[aid].Mass());
-    // spdlog::trace("  m_p[{}] = {}, m = {}", m_rid, m_p[m_rid], m_p[m_rid].Mass());
-    // spdlog::trace("  m_p[{}] = {}, m = {}", bid, m_p[bid], m_p[bid].Mass());
-    // spdlog::trace("  m_p[{}] = {}, m = {}", pid, m_p[pid], m_p[pid].Mass());
-    // spdlog::trace("  se = {}, sp = {}", se, sp);
-    // spdlog::trace("  m[0]^2 = {}, m[1]^2 = {}, m[2]^2 = {}, m[3]^2 = {}", m_s[0], m_s[1], m_s[2], m_s[3]);
-    // spdlog::trace("  iran = {}", iran);
-}
-
-double FSMapper::TChannelWeight(ChannelNode *node, unsigned int aid, unsigned int bid, unsigned int cid,
-                               std::vector<double> &rans) {
-    unsigned int pid = aid - (m_rid+bid);
-    double wgt = 1.0;
-    // aid = (1 << m_n) - 1 - aid;
-    m_p[pid] = m_p[aid]+m_p[m_rid]-m_p[bid];
-    double se = SCut(bid), sp = SCut(pid);
-    double rtsmax = (m_p[aid] + m_p[m_rid]).Mass();
-    const std::string name = "TChannelWeight(" + std::to_string(aid) + ", "
-                                               + std::to_string(bid) + ", "
-                                               + std::to_string(cid) + ", "
-                                               + std::to_string(pid) + ")";
-    spdlog::trace("{}", name);
-    if(!apes::IsPower2(bid)) {
-        double smin = se, smax = pow(rtsmax - sqrt(sp), 2);
-        wgt *= PropWeight(node, bid, smin, smax, se=m_p[bid].Mass2(), rans[iran++]);
-        spdlog::trace("  smin = {}, smax = {}", smin, smax);
-    }
-    if(!apes::IsPower2(pid)) {
-        double smin = sp, smax = pow(rtsmax - sqrt(se), 2);
-        wgt *= PropWeight(node, pid, smin, smax, sp=m_p[pid].Mass2(), rans[iran++]);
-        spdlog::trace("  smin = {}, smax = {}", smin, smax);
-    }
-    // TODO: Look up correct mass
-    // double mass = ATOOLS::Flavour((kf_code)(LocateNode(node, pid+m_rid) -> m_pid)).Mass(); 
-    // wgt *= CE.TChannelWeight(m_p[aid], m_p[m_rid], m_p[bid], m_p[pid], mass,
-    //                          m_alpha, m_ctmax, m_ctmin, m_amct, 0, rans[iran], rans[iran+1]);
-    // iran+=2;
-    // m_p[cid] = m_p[aid] - m_p[bid];
-    // spdlog::trace("  m_p[{}] = {}", aid, m_p[aid]);
-    // spdlog::trace("  m_p[{}] = {}", m_rid, m_p[m_rid]);
-    // spdlog::trace("  m_p[{}] = {}", bid, m_p[bid]);
-    // spdlog::trace("  m_p[{}] = {}", pid, m_p[pid]);
-    // spdlog::trace("  mass = {}", mass);
-    // spdlog::trace("  se = {}, sp = {}", se, sp);
-    // spdlog::trace("  iran = {}", iran);
-    // spdlog::trace("  wgt = {}", wgt);
     return wgt;
 }
 
-void FSMapper::SChannelMomenta(ChannelNode *node, unsigned int aid, unsigned int bid, unsigned int cid,
-                              const std::vector<double> &rans) {
-    unsigned int lid = SId(aid), rid = SId(bid);
-    const std::string name = "SChannelMomenta(" + std::to_string(cid) + ", "
-                                                + std::to_string(aid) + ", "
-                                                + std::to_string(bid) + ")";
-    double rts = m_p[cid].Mass(), sl = SCut(lid), sr = SCut(rid);
-    if(!apes::IsPower2(lid)) {
-        double smin = sl, smax = pow(rts - sqrt(sr), 2);
-        spdlog::trace("smin = {}, smax = {}, rts = {}, sr = {}", smin, smax, rts, sr);
-        sl = PropMomenta(node, lid, smin, smax, rans[iran++]);
+void FSMapper::GenSChan(SparseMom &mom, const std::vector<double> &rans, const SparseMass &masses2) {
+    for(size_t i = 0; i < m_channel.info.size(); ++i) {
+        if(!IsPower2(m_channel.info[i].idx)) {
+            auto decays = m_channel.decays.at(m_channel.info[i]);
+            DecayParts(m_channel.info[i], decays.first, decays.second, mom, rans, masses2);
+        }
     }
-    if(!apes::IsPower2(rid)) {
-        double smin = sr, smax = pow(rts - sqrt(sl), 2);
-        spdlog::trace("smin = {}, smax = {}, rts = {}, sl = {}", smin, smax, rts, sl);
-        sr = PropMomenta(node, rid, smin, smax, rans[iran++]);
-    }
-    // TODO: Translate momenta generation
-    // CE.Isotropic2Momenta(m_p[cid], sl, sr, m_p[lid], m_p[rid], rans[iran], rans[iran+1], m_ctmin, m_ctmax);
-    // iran+=2;
-    // m_p[(1<<m_n)-1-aid] = m_p[aid];
-    // m_p[(1<<m_n)-1-bid] = m_p[bid];
-    // spdlog::trace("{}", name);
-    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", cid, node -> m_pid, m_p[cid], m_p[cid].Mass());
-    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", lid, node -> m_children[0] -> m_pid, m_p[lid], m_p[lid].Mass());
-    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", rid, node -> m_children[1] -> m_pid, m_p[rid], m_p[rid].Mass());
-    // spdlog::trace("  sl = {}, sr = {}", sl, sr);
-    // spdlog::trace("  iran = {}", iran);
 }
 
-double FSMapper::SChannelWeight(ChannelNode *node, unsigned int aid, unsigned int bid, unsigned int cid,
-                               std::vector<double> &rans) {
-    double wgt = 1.0;
-    unsigned int lid = SId(aid), rid = SId(bid);
-    double rts = m_p[cid].Mass(), sl = SCut(lid), sr = SCut(rid);
-    if(!apes::IsPower2(lid)) {
-        double smin = sl, smax = pow(rts - sqrt(sr), 2);
-        wgt *= PropWeight(node, lid, smin, smax, sl=m_p[lid].Mass2(), rans[iran++]);
+double FSMapper::WgtSChan(const SparseMom &mom, std::vector<double> &rans) {
+    double wgt = 1; 
+    for(size_t i = 0; i < m_channel.info.size(); ++i) {
+        if(!IsPower2(m_channel.info[i].idx)) {
+            auto decays = m_channel.decays.at(m_channel.info[i]);
+            wgt *= WgtDecayParts(decays.first, decays.second, mom, rans);
+        }
     }
-    if(!apes::IsPower2(rid)) {
-        double smin = sr, smax = pow(rts - sqrt(sl), 2);
-        wgt *= PropWeight(node, rid, smin, smax, sr=m_p[rid].Mass2(), rans[iran++]);
-    }
-    // TODO: Implement the weight generation
-    // wgt *= CE.Isotropic2Weight(m_p[lid], m_p[rid], rans[iran], rans[iran+1], m_ctmin, m_ctmax);
-    // iran+=2;
-    // const std::string name = "SChannelWeight(" + std::to_string(cid) + ", "
-    //                                            + std::to_string(aid) + ", "
-    //                                            + std::to_string(bid) + ")";
-    // spdlog::trace("{}", name);
-    // spdlog::trace("  m_p[{}] ({}) = {}", cid, node -> m_pid, m_p[cid]);
-    // spdlog::trace("  m_p[{}] ({}) = {}", lid, node -> m_children[0] -> m_pid, m_p[lid]);
-    // spdlog::trace("  m_p[{}] ({}) = {}", rid, node -> m_children[1] -> m_pid, m_p[rid]);
-    // spdlog::trace("  sl = {}, sr = {}", sl, sr);
-    // spdlog::trace("  iran = {}", iran);
-    // spdlog::trace("  wgt = {}", wgt);
     return wgt;
-}
-
-ChannelNode *FSMapper::LocateNode(ChannelNode *node, unsigned int id) {
-  if (node->m_idx == id)
-    return node;
-  if (node->m_children[0]) {
-    auto result = LocateNode(node->m_children[0].get(), id);
-    if (!result && node->m_children[1]) {
-      result = LocateNode(node->m_children[1].get(), id);
-    }
-    return result;
-  }
-  return nullptr;
-}
-
-bool FSMapper::InitializeChannel(std::shared_ptr<ChannelNode> node) {
-    m_nodes = node;
-    return true;
 }
