@@ -94,9 +94,13 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         // Map the point based on the channel
         func.GeneratePoint(ichannel, rans, point);
 
+        // Preprocess event to determine if a valid point was created (i.e. cuts)
+        // if(!func.Preprocess(point))
+        //     continue;
+
         // Evaluate the function at this point
         double wgt = func.GenerateWeight(channel_weights, point, densities);
-        double val = wgt == 0 ? 0 : func(point, wgt);
+        double val = wgt == 0 ? 0 : func(point)*wgt;
         double val2 = val * val;
         func.AddTrainData(ichannel, val2);
         results += val;
@@ -106,6 +110,11 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
                 train_data[j] += densities[j] * val2 * wgt;
             }
         }
+
+        // Postprocess point (i.e. write out and unweighting)
+        // if(!func.Postprocess(point, val))
+        //     // If rejected generate another point
+        //     i--;
     }
 
     Adapt(train_data);

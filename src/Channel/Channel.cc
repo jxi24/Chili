@@ -35,7 +35,7 @@ double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<
     wgt *= WgtTChan(tmp_mom, rans);
     wgt *= WgtSChan(tmp_mom, rans);
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
-    spdlog::info("  Weight = {}", wgt);
+    spdlog::trace("  Weight = {}", wgt);
     return 1.0/wgt;
 }
 
