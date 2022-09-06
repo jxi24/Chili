@@ -62,3 +62,38 @@ endif()
 
 # Main code
 add_subdirectory(src)
+
+# Install CMake find_package files
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    ${CMAKE_SOURCE_DIR}/CMake/apes-config.cmake.in
+    ${CMAKE_BINARY_DIR}/CMake/apes-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/apes
+)
+
+configure_package_config_file(
+  ${CMAKE_SOURCE_DIR}/CMake/apes-config.in
+  ${CMAKE_CURRENT_BINARY_DIR}/bin/apes-config
+  INSTALL_DESTINATION ${CMAKE_INSTALL_BINDIR}
+  PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+            CMAKE_INSTALL_LIBDIR)
+
+write_basic_package_version_file(
+    ${CMAKE_BINARY_DIR}/CMake/apes-config-version.cmake
+    VERSION ${ACHILLES_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+install(
+    FILES
+        ${CMAKE_BINARY_DIR}/CMake/apes-config.cmake
+        ${CMAKE_BINARY_DIR}/CMake/apes-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/apes
+)
+
+install(
+    FILES
+        ${CMAKE_BINARY_DIR}/bin/apes-config
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
