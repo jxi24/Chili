@@ -23,7 +23,7 @@ void Vegas::operator()(const Func<double> &func) {
         Random::Instance().Generate(rans);
 
         double wgt = grid(rans);
-        double val = func(rans, wgt);
+        double val = func(rans)*wgt;
         double val2 = val * val;
 
         results += val;

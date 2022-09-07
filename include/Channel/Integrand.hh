@@ -24,9 +24,13 @@ class Integrand {
         Integrand(Func<T> func) : m_func{std::move(func)} {}
 
         // Function Utilities
-        double operator()(const std::vector<T> &point, double wgt) const { return m_func(point, wgt); }
-        Func<T> Function() const { return m_func; }
+        double operator()(const std::vector<T> &point) const { return m_func(point); }
+        const Func<T> &Function() const { return m_func; }
         Func<T> &Function() { return m_func; }
+        const std::function<bool(const std::vector<T>&, double)> &PostProcess() const { return m_post; }
+        std::function<bool(const std::vector<T>&, double)> &PostProcess() { return m_post; }
+        const std::function<bool(const std::vector<T>&)> &PreProcess() const { return m_pre; }
+        std::function<bool(const std::vector<T>&)> &PreProcess() { return m_pre; }
 
         // Channel Utilities
         void AddChannel(Channel<T> channel) { 
@@ -88,6 +92,8 @@ class Integrand {
     private:
         std::vector<Channel<T>> channels;
         Func<T> m_func{};
+        std::function<bool(const std::vector<T>&, double)> m_post;
+        std::function<bool(const std::vector<T>&)> m_pre;
 };
 
 }

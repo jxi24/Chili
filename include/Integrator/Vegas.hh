@@ -25,7 +25,7 @@
 namespace apes {
 
 template<typename T>
-using Func = std::function<double(const std::vector<T>&, const double&)>;
+using Func = std::function<double(const std::vector<T>&)>;
 
 struct VegasParams {
     size_t ncalls{ncalls_default}, nrefine{nrefine_default};
