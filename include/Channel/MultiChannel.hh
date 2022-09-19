@@ -21,7 +21,7 @@ struct MultiChannelParams {
     double beta{beta_default}, min_alpha{min_alpha_default};
     size_t iteration{};
 
-    static constexpr size_t ncalls_default{1000}, nint_default{10};
+    static constexpr size_t ncalls_default{10000}, nint_default{10};
     static constexpr double rtol_default{1e-2};
     static constexpr size_t nrefine_default{1};
     static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
@@ -95,7 +95,7 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         func.GeneratePoint(ichannel, rans, point);
 
         // Preprocess event to determine if a valid point was created (i.e. cuts)
-        if(!func.PreProcess(point))
+        if(!func.PreProcess()(point))
             continue;
 
         // Evaluate the function at this point
@@ -112,7 +112,7 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         }
 
         // Postprocess point (i.e. write out and unweighting)
-        if(!func.PostProcess(point, val))
+        if(!func.PostProcess()(point, val))
             // If rejected generate another point
             i--;
     }

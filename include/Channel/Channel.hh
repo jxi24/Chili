@@ -24,7 +24,7 @@ class FSMapper : public Mapper<FourVector> {
         }
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
-        size_t NDims() const override { return 3*m_nout - 4; }
+        size_t NDims() const override { return 3*m_nout - 4 + 2; }
         void WriteChannel() const;
 
     private:

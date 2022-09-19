@@ -20,6 +20,19 @@ std::vector<int> combine(int i, int j) {
     return {};
 }
 
+bool PreProcess(const std::vector<apes::FourVector> &mom) {
+    for(size_t i = 2; i < mom.size(); ++i) {
+        if(mom[i].Pt() < 30) return false;
+        if(std::abs(mom[i].Rapidity()) > 5) return false;
+        for(size_t j = i+1; j < mom.size(); ++j) {
+            if(mom[i].DeltaR(mom[j]) < 0.4) return false;
+        }
+    }
+    return true;
+}
+
+bool PostProcess(const std::vector<apes::FourVector>&, double) { return true; }
+
 int main() {
     apes::Model model(combine);
     model.Mass(1) = 0;
@@ -40,7 +53,7 @@ int main() {
     model.Width(21) = 0;
 
     // Construct channels
-    auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1, 21, 21}, model, 2);
+    auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1, 21}, model, 1);
     std::cout << mappings.size() << std::endl;
 
     // Setup integrator
@@ -59,14 +72,16 @@ int main() {
     // Initialize the multichannel integrator
     // Takes the number of dimensions, the number of channels, and options
     // The options can be found in the struct MultiChannelParams
-    apes::MultiChannel integrator{integrand.NDims(), integrand.NChannels(), {1000, 2}};
+    apes::MultiChannel integrator{integrand.NDims(), integrand.NChannels(), {}};
 
     // To integrate a function you need to pass it in and tell it to optimize
     // Summary will print out a summary of the results including the values of alpha
-    auto func = [&](const std::vector<apes::FourVector> &, const double &) {
+    auto func = [&](const std::vector<apes::FourVector> &) {
         return 1;
     };
     integrand.Function() = func;
+    integrand.PreProcess() = PreProcess;
+    integrand.PostProcess() = PostProcess;
     integrator.Optimize(integrand);
     integrator.Summary();
     integrator(integrand); // Generate events
