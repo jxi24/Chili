@@ -112,6 +112,12 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
 
     double etamax = ybar+y5starmax;
     double etamin = ybar-y5starmax;
+    // Handle case for no t-channel (i.e. only an s-channel decay chain)
+    if(m_channel.info.size() == 1) {
+        etamin = 0;
+        etamax = std::min(log(m_sqrts/2+sqrt(m_sqrts*m_sqrts/4-1)),
+                          m_cuts.etamax.at(m_channel.info.back().idx));
+    }
     double dely = etamax-etamin;
     double ycm = etamin+rans[iran++]*dely;
     double sinhy = sinh(ycm);
@@ -162,6 +168,12 @@ double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
 
     double etamax = ybar+y5starmax;
     double etamin = ybar-y5starmax;
+    // Handle case for no t-channel (i.e. only an s-channel decay chain)
+    if(m_channel.info.size() == 1) {
+        etamin = 0;
+        etamax = std::min(log(m_sqrts/2+sqrt(m_sqrts*m_sqrts/4-1)),
+                          m_cuts.etamax.at(m_channel.info.back().idx));
+    }
     double dely = etamax-etamin;
     wgt *= dely;
     double ycm = (mom.at(1) + mom.at(2)).Rapidity();
