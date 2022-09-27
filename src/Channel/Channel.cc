@@ -179,6 +179,13 @@ double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
     double ycm = (mom.at(1) + mom.at(2)).Rapidity();
     rans[iran++] = (ycm-etamin)/dely;
 
+    double sinhy = sinh(ycm);
+    double coshy = sqrt(1+sinhy*sinhy);
+    double sumpst = ptsum2+pow(psum.Pz()*coshy-psum.E()*sinhy, 2);
+    double q0st = sqrt(m2+sumpst);
+    double rshat = q0st + sqrt(mjets2+sumpst);
+    wgt *= rshat/(m_sqrts*m_sqrts*q0st);
+
     return wgt;
 }
 
