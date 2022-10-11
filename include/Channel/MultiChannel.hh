@@ -117,9 +117,9 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
             i--;
     }
 
-    Adapt(train_data);
-    func.Train();
-    MaxDifference(train_data);
+    // Adapt(train_data);
+    // func.Train();
+    // MaxDifference(train_data);
     summary.results.push_back(results);
     summary.sum_results += results;
 }

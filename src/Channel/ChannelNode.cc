@@ -232,6 +232,8 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     // Convert channel descriptions to mappings
     std::vector<std::unique_ptr<FSMapper>> mappings;
     for(auto ch_descr : channels) {
+        std::sort(ch_descr.info.begin(), ch_descr.info.end(), std::greater<>());
+        spdlog::info("Channel: {}", ToString(ch_descr));
         mappings.emplace_back(std::make_unique<FSMapper>(sqrts, flavs.size(), ch_descr, cuts));
     }
 

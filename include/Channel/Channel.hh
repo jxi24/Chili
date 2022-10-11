@@ -17,9 +17,14 @@ class FSMapper : public Mapper<FourVector> {
             : m_sqrts{sqrts}, m_ptmax{sqrts/2.0}, m_ntot{ntot}, m_nout{ntot-2}, m_channel{channel}, m_cuts{cuts} {
                 for(size_t i = 0; i < m_channel.info.size(); ++i) {
                     double val = 5;
-                    if(m_cuts.ptmin.at(m_channel.info[i].idx) != 0)
+                    if(m_cuts.ptmin.at(m_channel.info[i].idx) != 0) {
                         val = m_cuts.ptmin.at(m_channel.info[i].idx);
+                        spdlog::info("here, val = {}", val);
+                    }
                     m_ptmin.push_back(val);
+                }
+                for(size_t i = 0; i < m_ptmin.size(); ++i) {
+                    spdlog::info("{}: ptmin = {}, idx = {}", i, m_ptmin[i], m_channel.info[i].pid);
                 }
         }
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;

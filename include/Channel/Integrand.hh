@@ -80,8 +80,8 @@ class Integrand {
             for(size_t i = 0; i < NChannels(); ++i) {
                 densities[i] = channels[i].mapping -> GenerateWeight(point, rans);
                 channels[i].rans = rans;
-                double vw = channels[i].integrator.GenerateWeight(rans);
-                weight += wgts[i] * densities[i] / vw;
+                // double vw = channels[i].integrator.GenerateWeight(rans);
+                weight += wgts[i] / densities[i]; // / vw;
             }
             return 1.0 / weight;
         }

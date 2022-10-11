@@ -8,6 +8,7 @@
 std::vector<int> combine(int i, int j) { 
     if((i == 21 && j == 23) || (i == 23 && j == 21)) return {};
     if(i == 21 && j == 21) return {21};
+    if(i == 1 && j == -1) return {23};
     if(i == -j) {
         return {21, 23};
     } else if (i != j) {
@@ -21,6 +22,7 @@ std::vector<int> combine(int i, int j) {
 }
 
 bool PreProcess(const std::vector<apes::FourVector> &mom) {
+    return true;
     for(size_t i = 2; i < mom.size(); ++i) {
         if(mom[i].Pt() < 30) return false;
         if(std::abs(mom[i].Rapidity()) > 5) return false;
@@ -52,6 +54,8 @@ int main() {
     model.Width(23) = 2.5;
     model.Width(21) = 0;
 
+    // spdlog::set_level(spdlog::level::trace);
+
     // Construct channels
     auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1, 21}, model, 1);
     std::cout << mappings.size() << std::endl;
@@ -76,8 +80,8 @@ int main() {
 
     // To integrate a function you need to pass it in and tell it to optimize
     // Summary will print out a summary of the results including the values of alpha
-    auto func = [&](const std::vector<apes::FourVector> &) {
-        return 1;
+    auto func = [&](const std::vector<apes::FourVector> &p) {
+        return 1.0/(p[2]*p[3]*p[4].Pt2());
     };
     integrand.Function() = func;
     integrand.PreProcess() = PreProcess;

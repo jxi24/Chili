@@ -27,20 +27,23 @@ double apes::SqLam(double s,double s1,double s2) {
 double apes::MasslessPropWeight(double smin,double smax,const double s,double &ran) {
   if (s<smin || s>smax)
    spdlog::error("MasslessPropWeight(): Value out of bounds: {} .. {} vs. {}",smin,smax,s);
-  double hmin = 1/smax;
-  double hmax = 1/smin;
-  double delh = hmax-hmin;
-  ran = (1.0/s-hmin)/delh;
-  double w = delh*pow(s, 3);
+  // double hmin = 1/smax;
+  // double hmax = 1/smin;
+  // double delh = hmax-hmin;
+  // ran = (1.0/s-hmin)/delh;
+  // double w = delh*pow(s, 3);
+  ran = log(s/smin)/log(smax/smin);
+  double w = s*log(smax/smin);
   if (IsBad(w)) spdlog::error("MasslessPropWeight(): Weight is {}",w);
-  return 1./w;
+  return w;
 }
 
 double apes::MasslessPropMomenta(double smin,double smax, double ran) {
-  double hmin = 1/smax;
-  double hmax = 1/smin;
-  double delh = hmax-hmin;
-  double s = 1.0/(delh*ran+hmin);
+  // double hmin = 1/smax;
+  // double hmax = 1/smin;
+  // double delh = hmax-hmin;
+  // double s = 1.0/(delh*ran+hmin);
+  double s = smin*pow(smax/smin, ran);
   if (IsBad(s)) spdlog::error("MasslessPropMomenta(): Value is {}",s);
   return s;
 }
@@ -55,7 +58,7 @@ double apes::MassivePropWeight(double m,double g,double smin,double smax,double 
   double w(mw/((s-m2)*(s-m2)+mw*mw));
   w=(ymin-ymax)/w;
   if (IsBad(w)) spdlog::error("MassivePropWeight(): Weight is {}",w);
-  return 1./w;
+  return w;
 }
 
 double apes::MassivePropMomenta
@@ -127,7 +130,7 @@ double apes::SChannelWeight
   ran2=atan2(sp,cp)/(2.*M_PI);
   if (ran2<0.) ran2+=1.;
   double w((ctmax-ctmin)/2.);
-  w*=M_PI*SqLam(p.Mass2(),p1.Mass2(),p2.Mass2())/2.;
+  w*=SqLam(p.Mass2(),p1.Mass2(),p2.Mass2())/(8.*M_PI);
   if (IsBad(w)) spdlog::error("SChannelWeight(): Weight is {}.",w);
-  return 1./w;
+  return w;
 }
