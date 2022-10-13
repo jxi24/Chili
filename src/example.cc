@@ -80,8 +80,8 @@ int main() {
 
     // To integrate a function you need to pass it in and tell it to optimize
     // Summary will print out a summary of the results including the values of alpha
-    auto func = [&](const std::vector<apes::FourVector> &p) {
-        return 1.0/(p[2]*p[3]*p[4].Pt2());
+    auto func = [&](const std::vector<apes::FourVector> &) {
+        return 1.0;
     };
     integrand.Function() = func;
     integrand.PreProcess() = PreProcess;

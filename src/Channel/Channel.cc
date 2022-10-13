@@ -33,10 +33,9 @@ double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<
         tmp_mom[part.first.idx] = tmp_mom[part.second.first.idx] + tmp_mom[part.second.second.idx];
     }
     tmp_mom[3] = tmp_mom[1] + tmp_mom[2];
-    double wgtdecay = WgtDecays(tmp_mom, rans);
     double wgttchan = WgtTChan(tmp_mom, rans);
+    double wgtdecay = WgtDecays(tmp_mom, rans);
     double wgtschan = WgtSChan(tmp_mom, rans);
-    // spdlog::info("decays = {}, tchan = {}, schan = {}", wgtdecay, wgttchan, wgtschan); 
     wgt = wgtdecay*wgttchan*wgtschan;
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  Weight = {}", wgt);
@@ -89,8 +88,7 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
     // Handle the first n-1 outgoing t-channel particles
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         const double ran = rans[iran++];
-        // spdlog::info("{}: ptmin = {}", i, m_ptmin[i]);
-        double pt = m_ptmin[i]*pow(m_ptmax/m_ptmin[i], ran); // 2*m_ptmin[i]*m_ptmax*ran/(2*m_ptmin[i]+m_ptmax*(1-ran));
+        double pt = m_ptmin[i]+(m_ptmax-m_ptmin[i])*ran; // 2*m_ptmin[i]*m_ptmax*ran/(2*m_ptmin[i]+m_ptmax*(1-ran));
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
         etamax = std::min(etamax, m_cuts.etamax.at(m_channel.info[i].idx));
@@ -105,53 +103,36 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
 
     // Handle initial states and last t-channel momentum
     double mjets2 = psum.Mass2();
-    double ybar = 0.5*log((psum.E() + psum.Pz())/(psum.E() - psum.Pz()));
-    double ptsum2 = psum.Pt2();
+    double yjets = psum.Rapidity();
+    double ptj2 = psum.Pt2();
     double m2 = masses2.at(m_channel.info.back().idx);
-
-    double plstarsq = (pow(m_sqrts*m_sqrts-m2-mjets2, 2)
-                       -4*(mjets2*m2+ptsum2*m_sqrts*m_sqrts))/(4*m_sqrts*m_sqrts);
-    double plstar = sqrt(plstarsq);
-    double Estar = sqrt(plstarsq+ptsum2+mjets2);
-    double y5starmax = 0.5*log((Estar+plstar)/(Estar-plstar));
-
-    double etamax = ybar+y5starmax;
-    double etamin = ybar-y5starmax;
-    // Handle case for no t-channel (i.e. only an s-channel decay chain)
-    if(m_channel.info.size() == 1) {
-        etamin = 0.5*log(m2/(m_sqrts*m_sqrts));
-        etamax = -0.5*log(m2/(m_sqrts*m_sqrts));
-    }
-    double dely = etamax-etamin;
-    double ycm = etamin+rans[iran++]*dely;
-    double sinhy = sinh(ycm);
+    double qt = sqrt(m2+ptj2);
+    double mt = sqrt(mjets2+ptj2);
+    double ymin = -log(m_sqrts/qt*(1-mt/m_sqrts*exp(-yjets)));
+    double ymax = log(m_sqrts/qt*(1-mt/m_sqrts*exp(yjets)));
+    double dely = ymax-ymin;
+    double yv = ymin+rans[iran++]*dely;
+    double sinhy = sinh(yv);
     double coshy = sqrt(1+sinhy*sinhy);
-    
-    double sumpst = ptsum2+pow(psum.Pz()*coshy-psum.E()*sinhy, 2);
-    double q0st = sqrt(m2+sumpst);
-    double rshat = q0st + sqrt(mjets2+sumpst);
-    mom[3] = {rshat*coshy, 0, 0, rshat*sinhy};
-
-    std::array<double, 2> xx;
-    xx[0] = (mom[3].E()+mom[3].Pz())/m_sqrts;
-    xx[1] = (mom[3].E()-mom[3].Pz())/m_sqrts;
-
-    mom[m_channel.info.back().idx] = mom[3] - psum;
-    mom[1] = {-xx[0]*m_sqrts/2, 0, 0, -xx[0]*m_sqrts/2};
-    mom[2] = {-xx[1]*m_sqrts/2, 0, 0, xx[1]*m_sqrts/2};
+    mom[m_channel.info.back().idx] = {qt*coshy, -psum[1], -psum[2], qt*sinhy};
+    double pp = (mom[m_channel.info.back().idx]+psum).PPlus();
+    double pm = (mom[m_channel.info.back().idx]+psum).PMinus();
+    mom[1] = {-pp/2, 0, 0, -pp/2};
+    mom[2] = {-pm/2, 0, 0, pm/2};
 }
 
 double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
-    if((mom.at(3).E()+mom.at(3).Pz())/m_sqrts > 1 || (mom.at(3).E()-mom.at(3).Pz())/m_sqrts > 1)
-        return 0;
-    double wgt = 1;
+    // if((mom.at(3).E()+mom.at(3).Pz())/m_sqrts > 1 || (mom.at(3).E()-mom.at(3).Pz())/m_sqrts > 1)
+    //     return 0;
+    double wgt = 2*M_PI;
     FourVector psum{};
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         wgt *= 1.0/(16*pow(M_PI, 3));
         double pt = mom.at(m_channel.info[i].idx).Pt();
-        wgt *= pt*pt*log(m_ptmax/m_ptmin[i]);
+        wgt *= pt*(m_ptmax-m_ptmin[i]);
         // wgt *= pt*m_ptmax/2/m_ptmin[i]/(2*m_ptmin[i]+m_ptmax)*pow(2*m_ptmin[i]+pt, 2);
-        rans[iran++] = (pt - m_ptmin[i]); // pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
+        // rans[iran++] = (pt - m_ptmin[i]); // pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
+        rans[iran++] = (pt-m_ptmin[i])/(m_ptmax-m_ptmin[i]); // pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
         etamax = std::min(etamax, m_cuts.etamax.at(m_channel.info[i].idx));
@@ -164,35 +145,17 @@ double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
     }
     // Handle initial states and last t-channel momentum
     double mjets2 = psum.Mass2();
-    double ybar = 0.5*log((psum.E() + psum.Pz())/(psum.E() - psum.Pz()));
-    double ptsum2 = psum.Pt2();
+    double yjets = psum.Rapidity();
+    double ptj2 = psum.Pt2();
     double m2 = mom.at(m_channel.info.back().idx).Mass2();
-    double plstarsq = (pow(m_sqrts*m_sqrts-m2-mjets2, 2)
-                       -4*(mjets2*m2+ptsum2*m_sqrts*m_sqrts))/(4*m_sqrts*m_sqrts);
-    double plstar = sqrt(plstarsq);
-    double Estar = sqrt(plstarsq+ptsum2+mjets2);
-    double y5starmax = 0.5*log((Estar+plstar)/(Estar-plstar));
-
-    double etamax = ybar+y5starmax;
-    double etamin = ybar-y5starmax;
-    // Handle case for no t-channel (i.e. only an s-channel decay chain)
-    if(m_channel.info.size() == 1) {
-        etamin = 0.5*log(m2/(m_sqrts*m_sqrts));
-        etamax = -0.5*log(m2/(m_sqrts*m_sqrts));
-    }
-    double dely = etamax-etamin;
-    wgt *= dely;
-    double ycm = (mom.at(1) + mom.at(2)).Rapidity();
-    rans[iran++] = (ycm-etamin)/dely;
-
-    double sinhy = sinh(ycm);
-    double coshy = sqrt(1+sinhy*sinhy);
-    double sumpst = ptsum2+pow(psum.Pz()*coshy-psum.E()*sinhy, 2);
-    double q0st = sqrt(m2+sumpst);
-    double rshat = q0st + sqrt(mjets2+sumpst);
-    wgt *= rshat/(m_sqrts*m_sqrts*q0st);
-
-    if(std::isnan(wgt)) wgt = 0;
+    double qt = sqrt(m2+ptj2);
+    double mt = sqrt(mjets2+ptj2);
+    double yv = mom.at(m_channel.info.back().idx).Rapidity();
+    double ymin = -log(m_sqrts/qt*(1-mt/m_sqrts*exp(-yjets)));
+    double ymax = log(m_sqrts/qt*(1-mt/m_sqrts*exp(yjets)));
+    double dely = ymax-ymin;
+    wgt *= dely/m_sqrts/m_sqrts;
+    rans[iran++] = (yv-ymin)/dely;
 
     return wgt;
 }

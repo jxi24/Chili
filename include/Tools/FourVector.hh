@@ -152,6 +152,14 @@ class FourVector {
         ///@return double: Three momentum
         double P() const noexcept {return sqrt(P2());}
 
+        /// Return the plus component
+        ///@return double: Plus component 
+        double PPlus() const noexcept {return E() + Pz();}
+
+        /// Return the minus component
+        ///@return double: minus component 
+        double PMinus() const noexcept {return E() - Pz();}
+
         /// Return the invariant mass squared
         ///@return double: The invariant mass squared
         double Mass2() const noexcept {return (*this)*(*this);} 
