@@ -151,7 +151,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         pids.insert(info.pid);
     }
     s.push({pids, {avail_currents}});
-    std::vector<ChannelDescription> channels;
+    std::set<ChannelDescription> channels;
     while(!s.empty()) {
         DataFrame top = s.top();
         s.pop();
@@ -178,7 +178,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                 }
                 channel_old = channel_new;
             }
-            channels.insert(channels.end(), channel_old.begin(), channel_old.end());
+            channels.insert(channel_old.begin(), channel_old.end());
             continue;
         }
         if(top.avail_currents.empty()) continue;
@@ -190,9 +190,9 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                 d.avail_currents.erase(d.avail_currents.begin()+static_cast<int>(i));
                 continue;
             }
-            if(!d.currents.empty()) {
-                if(d.currents.back() > top.avail_currents[i]) continue;
-            }
+            // if(!d.currents.empty()) {
+            //     if(d.currents.back() > top.avail_currents[i]) continue;
+            // }
             if(HaveCommonBitSet(d.idx_sum, top.avail_currents[i])) continue;
             std::set<int> combined;
             for(const auto &pid1 : d.pid) {
@@ -212,7 +212,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
 
     // Extend channels by adding in decays
     for(const auto &decay : decayChain) {
-        ChannelVec new_channels;
+        std::set<ChannelDescription> new_channels;
         for(const auto &channel : channels) {
             bool add_decay = std::binary_search(channel.info.begin(), channel.info.end(), decay.first);
             for(const auto &prods : channel.decays) {
@@ -222,9 +222,9 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                 for(const auto &decay_prods : decay.second) {
                     auto chan = channel;
                     chan.decays[decay.first] = decay_prods;
-                    new_channels.push_back(chan);
+                    new_channels.insert(chan);
                 }
-            } else new_channels.push_back(channel);
+            } else new_channels.insert(channel);
         }
         channels = new_channels;
     }
@@ -252,4 +252,15 @@ bool apes::operator<(const ParticleInfo &a, const ParticleInfo &b) {
 
 bool apes::operator==(const ParticleInfo &a, const ParticleInfo &b) {
     return a.mass == b.mass && a.idx == b.idx && a.pid == b.pid;
+}
+
+bool apes::operator<(const ChannelDescription &a, const ChannelDescription &b) {
+    if(a.info.size() == b.info.size()) {
+        for(size_t i = 0; i < a.info.size(); ++i) {
+            if(a.info[i] < b.info[i]) return true;
+            else if(a.info[i] > b.info[i]) return false;
+        }
+        return false;
+    }
+    return a.info.size() < b.info.size();
 }

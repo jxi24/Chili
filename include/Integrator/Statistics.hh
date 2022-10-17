@@ -103,6 +103,7 @@ class StatsData {
         double Min() const { return min; }
         double Max() const { return max; }
         double Error() const { return sqrt(Variance()); }
+        double Efficiency() const { return static_cast<double>(n_finite)/static_cast<double>(n); }
 
         bool operator==(const StatsData &other) const {
             static constexpr double tol = 1e-6;

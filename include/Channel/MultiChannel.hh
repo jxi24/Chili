@@ -108,7 +108,7 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 
         if(val2 != 0) {
             for(size_t j = 0; j < nchannels; ++j) {
-                train_data[j] += densities[j] * val2 * wgt;
+                train_data[j] += val2 * wgt / densities[j];
             }
         }
 
@@ -122,9 +122,9 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         results += val;
     }
 
-    // Adapt(train_data);
-    // func.Train();
-    // MaxDifference(train_data);
+    Adapt(train_data);
+    func.Train();
+    MaxDifference(train_data);
     summary.results.push_back(results);
     summary.sum_results += results;
 }

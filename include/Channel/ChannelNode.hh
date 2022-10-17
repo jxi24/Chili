@@ -57,6 +57,7 @@ inline bool operator!=(const ParticleInfo &a, const ParticleInfo &b) {
 inline bool operator>(const ParticleInfo &a, const ParticleInfo &b) {
     return b < a && b != a;
 }
+bool operator<(const ChannelDescription &a, const ChannelDescription &b);
 
 inline std::string ToString(ParticleInfo info) {
     return fmt::format("Particle({}, {}, {}, {})",

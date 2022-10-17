@@ -22,9 +22,8 @@ std::vector<int> combine(int i, int j) {
 }
 
 bool PreProcess(const std::vector<apes::FourVector> &mom) {
-    return true;
     for(size_t i = 2; i < mom.size(); ++i) {
-        if(mom[i].Pt() < 30) return false;
+        if(mom[i].Pt() < 1) return false;
         if(std::abs(mom[i].Rapidity()) > 5) return false;
         for(size_t j = i+1; j < mom.size(); ++j) {
             if(mom[i].DeltaR(mom[j]) < 0.4) return false;
@@ -57,7 +56,8 @@ int main() {
     // spdlog::set_level(spdlog::level::trace);
 
     // Construct channels
-    auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1, 21}, model, 1);
+    auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1}, model, 1);
+    // auto mappings = apes::ConstructChannels(13000, {-2, -1, 2, 1}, model, 1);
     std::cout << mappings.size() << std::endl;
 
     // Setup integrator

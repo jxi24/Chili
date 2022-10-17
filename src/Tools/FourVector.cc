@@ -24,6 +24,7 @@ double FourVector::Phi() const noexcept {
 }
 
 double FourVector::Rapidity() const noexcept {
+    if(E() == 0) return 99;
     return log((E() + Pz())/(E() - Pz()))/2;
 }
 

@@ -58,6 +58,7 @@ apes::MultiChannelSummary apes::MultiChannel::Summary() {
               << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)",
                              summary.Result().Mean(), summary.Result().Error(),
                              summary.Result().Error() / summary.Result().Mean()*100) << std::endl;
+    std::cout << fmt::format("Cut Efficiency: {}", summary.Result().Efficiency()) << std::endl;
     std::cout << "Channel weights:\n";
     for(size_t i = 0; i < best_weights.size(); ++i) {
         std::cout << "  alpha(" << i << ") = " << best_weights[i] << "\n";

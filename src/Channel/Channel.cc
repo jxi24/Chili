@@ -33,10 +33,11 @@ double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<
         tmp_mom[part.first.idx] = tmp_mom[part.second.first.idx] + tmp_mom[part.second.second.idx];
     }
     tmp_mom[3] = tmp_mom[1] + tmp_mom[2];
-    double wgttchan = WgtTChan(tmp_mom, rans);
     double wgtdecay = WgtDecays(tmp_mom, rans);
+    double wgttchan = WgtTChan(tmp_mom, rans);
     double wgtschan = WgtSChan(tmp_mom, rans);
     wgt = wgtdecay*wgttchan*wgtschan;
+    spdlog::trace("Channel = {}", ToString(m_channel));
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  Weight = {}", wgt);
     return wgt;
@@ -73,6 +74,7 @@ double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
         double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
         double smin = std::max(smin1, smin2);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
+        spdlog::trace("s = {}, smin = {}, smax = {}", mom.at(decay.first.idx).Mass2(), smin, smax);
         if(std::abs(decay.first.mass) < 1e-16) {
             wgt *= MasslessPropWeight(smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
         } else {
