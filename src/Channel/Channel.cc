@@ -81,6 +81,7 @@ double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
             wgt *= MassivePropWeight(decay.first.mass, decay.first.width,
                                      smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
         }
+        wgt /= (2*M_PI);
     }
     return wgt;
 }
@@ -126,7 +127,7 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
 double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
     // if((mom.at(3).E()+mom.at(3).Pz())/m_sqrts > 1 || (mom.at(3).E()-mom.at(3).Pz())/m_sqrts > 1)
     //     return 0;
-    double wgt = m_channel.info.size() == 1 ? 1 : 2*M_PI;
+    double wgt = 2*M_PI;
     FourVector psum{};
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         wgt *= 1.0/(16*pow(M_PI, 3));
