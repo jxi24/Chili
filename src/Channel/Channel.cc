@@ -126,7 +126,7 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
 double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
     // if((mom.at(3).E()+mom.at(3).Pz())/m_sqrts > 1 || (mom.at(3).E()-mom.at(3).Pz())/m_sqrts > 1)
     //     return 0;
-    double wgt = 2*M_PI;
+    double wgt = m_channel.info.size() == 1 ? 1 : 2*M_PI;
     FourVector psum{};
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         wgt *= 1.0/(16*pow(M_PI, 3));

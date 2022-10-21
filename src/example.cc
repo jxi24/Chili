@@ -23,7 +23,7 @@ std::vector<int> combine(int i, int j) {
 
 bool PreProcess(const std::vector<apes::FourVector> &mom) {
     for(size_t i = 2; i < mom.size(); ++i) {
-        if(mom[i].Pt() < 1) return false;
+        if(mom[i].Pt() < 5) return false;
         if(std::abs(mom[i].Rapidity()) > 5) return false;
         for(size_t j = i+1; j < mom.size(); ++j) {
             if(mom[i].DeltaR(mom[j]) < 0.4) return false;
@@ -56,8 +56,9 @@ int main() {
     // spdlog::set_level(spdlog::level::trace);
 
     // Construct channels
-    auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1}, model, 1);
+    // auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1}, model, 1);
     // auto mappings = apes::ConstructChannels(13000, {-2, -1, 2, 1}, model, 1);
+    auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 1);
     std::cout << mappings.size() << std::endl;
 
     // Setup integrator
@@ -81,7 +82,7 @@ int main() {
     // To integrate a function you need to pass it in and tell it to optimize
     // Summary will print out a summary of the results including the values of alpha
     auto func = [&](const std::vector<apes::FourVector> &) {
-        return 1.0;
+        return 1; // (pow(p[0]*p[2], 2)+pow(p[0]*p[3], 2))/pow(p[2]*p[3], 2);
     };
     integrand.Function() = func;
     integrand.PreProcess() = PreProcess;

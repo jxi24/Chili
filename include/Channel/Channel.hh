@@ -16,7 +16,7 @@ class FSMapper : public Mapper<FourVector> {
         FSMapper(double sqrts, size_t ntot, ChannelDescription channel, Cuts cuts) 
             : m_sqrts{sqrts}, m_ptmax{sqrts/2.0}, m_ntot{ntot}, m_nout{ntot-2}, m_channel{channel}, m_cuts{cuts} {
                 for(size_t i = 0; i < m_channel.info.size(); ++i) {
-                    double val = 5;
+                    double val = 1;
                     if(m_cuts.ptmin.at(m_channel.info[i].idx) != 0) {
                         val = m_cuts.ptmin.at(m_channel.info[i].idx);
                     }
