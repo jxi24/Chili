@@ -8,7 +8,6 @@
 std::vector<int> combine(int i, int j) { 
     if((i == 21 && j == 23) || (i == 23 && j == 21)) return {};
     if(i == 21 && j == 21) return {21};
-    if(i == 1 && j == -1) return {23};
     if(i == -j) {
         return {21, 23};
     } else if (i != j) {
@@ -22,6 +21,8 @@ std::vector<int> combine(int i, int j) {
 }
 
 bool PreProcess(const std::vector<apes::FourVector> &mom) {
+    if(std::isnan(mom[0][0])) return false;
+    if((mom[0]+mom[1]).Mass2() > 13000*13000) return false;
     for(size_t i = 2; i < mom.size(); ++i) {
         if(mom[i].Pt() < 5) return false;
         if(std::abs(mom[i].Rapidity()) > 5) return false;
@@ -58,7 +59,7 @@ int main() {
     // Construct channels
     // auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1}, model, 1);
     // auto mappings = apes::ConstructChannels(13000, {-2, -1, 2, 1}, model, 1);
-    auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 1);
+    auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21, 21, 21, 21, 21}, model, 1);
     std::cout << mappings.size() << std::endl;
 
     // Setup integrator

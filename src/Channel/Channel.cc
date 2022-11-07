@@ -2,6 +2,7 @@
 #include "Tools/ChannelElements.hh"
 
 using apes::FSMapper;
+using std::isnan;
 
 void FSMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
     mom.resize(m_ntot);
@@ -74,7 +75,6 @@ double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
         double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
         double smin = std::max(smin1, smin2);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
-        spdlog::trace("s = {}, smin = {}, smax = {}", mom.at(decay.first.idx).Mass2(), smin, smax);
         if(std::abs(decay.first.mass) < 1e-16) {
             wgt *= MasslessPropWeight(smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
         } else {
@@ -138,6 +138,7 @@ double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
         rans[iran++] = (pt-m_ptmin[i])/(m_ptmax-m_ptmin[i]); // pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
+        etamax = std::isnan(etamax) ? 99 : etamax;
         etamax = std::min(etamax, m_cuts.etamax.at(m_channel.info[i].idx));
         wgt *= 2*etamax*2*M_PI;
         double y = mom.at(m_channel.info[i].idx).Rapidity();
@@ -157,6 +158,7 @@ double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
     double ymin = -log(m_sqrts/qt*(1-mt/m_sqrts*exp(-yjets)));
     double ymax = log(m_sqrts/qt*(1-mt/m_sqrts*exp(yjets)));
     double dely = ymax-ymin;
+    if (std::isnan(ymax) || std::isnan(ymin)) return 0;
     wgt *= dely/m_sqrts/m_sqrts;
     rans[iran++] = (yv-ymin)/dely;
 

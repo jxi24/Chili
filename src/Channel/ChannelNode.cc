@@ -59,7 +59,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         cuts.smin[info.idx] = info.mass*info.mass;
         // TODO: Make this read in
         cuts.ptmin[info.idx] = 1;
-        cuts.etamax[info.idx] = 5;
+        cuts.etamax[info.idx] = 99;
         if(i > 1) cuts.sexternal.push_back(info.mass*info.mass);
     }
 
@@ -191,9 +191,9 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                 d.avail_currents.erase(d.avail_currents.begin()+static_cast<int>(i));
                 continue;
             }
-            // if(!d.currents.empty()) {
-            //     if(d.currents.back() > top.avail_currents[i]) continue;
-            // }
+            if(!d.currents.empty()) {
+                if(d.currents.back() > top.avail_currents[i]) continue;
+            }
             if(HaveCommonBitSet(d.idx_sum, top.avail_currents[i])) continue;
             std::set<int> combined;
             for(const auto &pid1 : d.pid) {
@@ -213,12 +213,15 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
 
     // Extend channels by adding in decays
     for(const auto &decay : decayChain) {
+        spdlog::trace("Decay: {}", ToString(decay.first));
         std::set<ChannelDescription> new_channels;
         for(const auto &channel : channels) {
-            bool add_decay = std::binary_search(channel.info.begin(), channel.info.end(), decay.first);
+            spdlog::trace("Channel: {}", ToString(channel));
+            bool add_decay = std::binary_search(channel.info.begin(), channel.info.end(), decay.first, std::greater<>());
             for(const auto &prods : channel.decays) {
                 add_decay |= prods.second.first == decay.first || prods.second.second == decay.first;
             }
+            spdlog::trace("Allowed? {}", add_decay);
             if(add_decay) {
                 for(const auto &decay_prods : decay.second) {
                     auto chan = channel;
