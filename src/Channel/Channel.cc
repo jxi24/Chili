@@ -91,7 +91,14 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
     // Handle the first n-1 outgoing t-channel particles
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         const double ran = rans[iran++];
-        double pt = m_ptmin[i]+(m_ptmax-m_ptmin[i])*ran; // 2*m_ptmin[i]*m_ptmax*ran/(2*m_ptmin[i]+m_ptmax*(1-ran));
+        double pt{};
+        if(!IsPower2(m_channel.info[i].idx))
+            pt = 2*m_ptmin[i]*m_ptmax*ran/(2*m_ptmin[i]+m_ptmax*(1-ran));
+        else {
+            double hmin = 1/m_ptmax;
+            double hmax = 1/m_ptmin[i];
+            pt = 1/(hmin+ran*(hmax-hmin));
+        }
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
         etamax = std::min(etamax, m_cuts.etamax.at(m_channel.info[i].idx));
@@ -125,17 +132,20 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
 }
 
 double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
-    // if((mom.at(3).E()+mom.at(3).Pz())/m_sqrts > 1 || (mom.at(3).E()-mom.at(3).Pz())/m_sqrts > 1)
-    //     return 0;
     double wgt = 2*M_PI;
     FourVector psum{};
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         wgt *= 1.0/(16*pow(M_PI, 3));
         double pt = mom.at(m_channel.info[i].idx).Pt();
-        wgt *= pt*(m_ptmax-m_ptmin[i]);
-        // wgt *= pt*m_ptmax/2/m_ptmin[i]/(2*m_ptmin[i]+m_ptmax)*pow(2*m_ptmin[i]+pt, 2);
-        // rans[iran++] = (pt - m_ptmin[i]); // pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
-        rans[iran++] = (pt-m_ptmin[i])/(m_ptmax-m_ptmin[i]); // pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
+        if(!IsPower2(m_channel.info[i].idx)) {
+            wgt *= pt*m_ptmax/2/m_ptmin[i]/(2*m_ptmin[i]+m_ptmax)*pow(2*m_ptmin[i]+pt, 2);
+            rans[iran++] = pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
+        } else {
+            double hmin = 1/m_ptmax;
+            double hmax = 1/m_ptmin[i];
+            rans[iran++] = (1/pt-hmin)/(hmax-hmin);
+            wgt *= (hmax-hmin)*pt*pt*pt;
+        }
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
         etamax = std::isnan(etamax) ? 99 : etamax;

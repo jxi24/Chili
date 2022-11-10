@@ -58,7 +58,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         currentComponents[info.idx].insert(info);
         cuts.smin[info.idx] = info.mass*info.mass;
         // TODO: Make this read in
-        cuts.ptmin[info.idx] = 1;
+        cuts.ptmin[info.idx] = 30;
         cuts.etamax[info.idx] = 99;
         if(i > 1) cuts.sexternal.push_back(info.mass*info.mass);
     }
