@@ -19,13 +19,17 @@ struct MultiChannelParams {
     double rtol{rtol_default};
     size_t nrefine{nrefine_default};
     double beta{beta_default}, min_alpha{min_alpha_default};
+    double refine_size{refine_size_default};
+    size_t max_bins{max_bins_default};
     size_t iteration{};
 
     static constexpr size_t ncalls_default{10000}, nint_default{10};
     static constexpr double rtol_default{1e-2};
     static constexpr size_t nrefine_default{1};
     static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
-    static constexpr size_t nparams = 7;
+    static constexpr double refine_size_default{0.5};
+    static constexpr size_t max_bins_default{200};
+    static constexpr size_t nparams = 8;
 };
 
 class MultiChannel {
@@ -57,9 +61,9 @@ class MultiChannel {
         template<typename T>
         void RefineChannels(Integrand<T> &func) {
             params.iteration = 0;
-            params.ncalls *= 2;
+            params.ncalls = static_cast<size_t>(pow(static_cast<double>(params.ncalls), params.refine_size));
             for(auto &channel : func.Channels()) {
-                if(channel.integrator.Grid().Bins() < 200)
+                if(channel.integrator.Grid().Bins() < params.max_bins)
                     channel.integrator.Refine();
             }
         }
@@ -195,6 +199,8 @@ struct convert<apes::MultiChannelParams> {
         node["nrefine"] = rhs.nrefine;
         node["beta"] = rhs.beta;
         node["min_alpha"] = rhs.min_alpha;
+        node["refine_size"] = rhs.refine_size;
+        node["max_bins"] = rhs.max_bins;
         node["iteration"] = rhs.iteration;
 
         return node;
@@ -209,6 +215,8 @@ struct convert<apes::MultiChannelParams> {
         rhs.nrefine = node["nrefine"].as<size_t>();
         rhs.beta = node["beta"].as<double>();
         rhs.min_alpha = node["min_alpha"].as<double>();
+        rhs.refine_size = node["refine_size"].as<double>();
+        rhs.max_bins = node["max_bins"].as<size_t>();
         rhs.iteration = node["iteration"].as<size_t>();
 
         return true;
