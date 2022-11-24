@@ -27,7 +27,7 @@ struct MultiChannelParams {
     static constexpr double rtol_default{1e-2};
     static constexpr size_t nrefine_default{1};
     static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
-    static constexpr double refine_size_default{0.5};
+    static constexpr double refine_size_default{1.5};
     static constexpr size_t max_bins_default{200};
     static constexpr size_t nparams = 8;
 };
@@ -61,7 +61,7 @@ class MultiChannel {
         template<typename T>
         void RefineChannels(Integrand<T> &func) {
             params.iteration = 0;
-            params.ncalls = static_cast<size_t>(pow(static_cast<double>(params.ncalls), params.refine_size));
+	    params.ncalls = static_cast<size_t>(static_cast<double>(params.ncalls) * params.refine_size);
             for(auto &channel : func.Channels()) {
                 if(channel.integrator.Grid().Bins() < params.max_bins)
                     channel.integrator.Refine();
