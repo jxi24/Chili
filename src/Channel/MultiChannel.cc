@@ -67,7 +67,7 @@ apes::MultiChannelSummary apes::MultiChannel::Summary() {
 }
 
 void apes::MultiChannel::PrintIteration() const {
-    std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
+  std::cout << fmt::format("XS: {:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}    Points: {:3d}",
             summary.results.size(), summary.results.back().Mean(), summary.results.back().Error(),
-            summary.Result().Mean(), summary.Result().Error()) << std::endl;
+			     summary.Result().Mean(), summary.Result().Error(), summary.results.back().Calls()) << std::endl;
 }
