@@ -67,8 +67,8 @@ int main() {
 
     // Construct channels
     // auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1}, model, 1);
-    // auto mappings = apes::ConstructChannels(13000, {-2, -1, 2, 1}, model, 1);
-    auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 1);
+    auto mappings = apes::ConstructChannels(13000, {-2, -1, 2, 1, 3, -3}, model, 1);
+    // auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 1);
     std::cout << mappings.size() << std::endl;
 
     // Setup integrator
@@ -97,6 +97,7 @@ int main() {
     integrand.Function() = func;
     integrand.PreProcess() = PreProcess;
     integrand.PostProcess() = PostProcess;
+    spdlog::info("Starting optimization");
     integrator.Optimize(integrand);
     integrator.Summary();
     integrator(integrand); // Generate events
