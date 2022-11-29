@@ -139,17 +139,17 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         }
     }
 
+    spdlog::trace("Available currents:");
     std::vector<unsigned int> avail_currents;
     for(const auto & chelm : currentComponents) {
         avail_currents.push_back(chelm.first);
+        spdlog::trace("  - {}", chelm.first);
     }
+    std::reverse(avail_currents.begin(), avail_currents.end());
 
     std::stack<DataFrame> s;
     size_t max_id = (1 << flavs.size()) - 1;
-    std::set<int> pids;
-    for(const auto &info : currentComponents[2]) {
-        pids.insert(info.pid);
-    }
+    std::set<int> pids{currentComponents[1].begin() -> pid};
     s.push({pids, {avail_currents}});
     std::set<ChannelDescription> channels;
     while(!s.empty()) {
@@ -192,7 +192,9 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                 continue;
             }
             if(!d.currents.empty()) {
-                if(d.currents.back() > top.avail_currents[i]) continue;
+                // Ensure that one and only one particle is combined with an initial state
+                // Since the s-channel particles have already been combined
+                if(!(d.currents.back() & 3) && !(top.avail_currents[i] & 3)) continue;
             }
             if(HaveCommonBitSet(d.idx_sum, top.avail_currents[i])) continue;
             std::set<int> combined;
