@@ -6,7 +6,7 @@ if(POLICY CMP0053)
 endif()
 
 # Set the project name and basic settings
-project(APES LANGUAGES CXX VERSION 1.0.0)
+project(APES LANGUAGES CXX CUDA VERSION 1.0.0)
 include(CMake/StandardProjectSettings.cmake)
 
 # Link this 'library' to set the c++ standard / compile-time options requested
@@ -59,6 +59,9 @@ if(ENABLE_TESTING)
     message(STATUS "Building Tests.")
     add_subdirectory(test)
 endif()
+
+# Cuda dependencies
+find_package(stdgpu 1.0.0 REQUIRED)
 
 # Main code
 add_subdirectory(src)
