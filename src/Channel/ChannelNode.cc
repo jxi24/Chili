@@ -47,6 +47,14 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     cuts.deltaR[{21, 2}] = 0.4;
     cuts.deltaR[{21, -2}] = 0.4;
     cuts.deltaR[{21, 21}] = 0.4;
+    cuts.deltaR[{-3, -3}] = 0.4;
+    cuts.deltaR[{-3, 3}] = 0.4;
+    cuts.deltaR[{-3, 21}] = 0.4;
+    cuts.deltaR[{3, -3}] = 0.4;
+    cuts.deltaR[{3, 3}] = 0.4;
+    cuts.deltaR[{3, 21}] = 0.4;
+    cuts.deltaR[{21, -3}] = 0.4;
+    cuts.deltaR[{21, 3}] = 0.4;
 
     // Setup initial states
     for(size_t i = 0; i < flavs.size(); ++i) {
@@ -145,7 +153,6 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         avail_currents.push_back(chelm.first);
         spdlog::trace("  - {}", chelm.first);
     }
-    std::reverse(avail_currents.begin(), avail_currents.end());
 
     std::stack<DataFrame> s;
     size_t max_id = (1 << flavs.size()) - 1;
