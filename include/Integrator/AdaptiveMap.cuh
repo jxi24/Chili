@@ -32,7 +32,7 @@ struct AdaptiveMap {
     __host__ __device__
     double width(size_t dim, size_t bin) const { return upper_edge(dim, bin) - lower_edge(dim, bin); }
     __host__ __device__
-    size_t FindBin(size_t, double) const;
+    uint16_t FindBin(size_t, double) const;
 
     // Functions
     __device__
@@ -40,7 +40,9 @@ struct AdaptiveMap {
     __device__
     void GenerateWeight(double*, double*) const;
     __device__
-    void SampleWeight(double*, double*, uint16_t*) const;
+    void SampleWeight(double*, double*) const;
+    __device__
+    void Histogram(double*, uint16_t*) const;
     __host__
     void Adapt(double, const std::vector<double>&);
 
@@ -50,7 +52,7 @@ struct AdaptiveMap {
 
 namespace detail {
 __global__ void SeedRandom(curandState*, size_t);
-__global__ void BatchSample(curandState*, AdaptiveMap*, double*, double*, uint16_t*);
+__global__ void BatchSample(curandState*, AdaptiveMap*, double*, double*);
 }
 
 struct AdaptiveMapHandler {
@@ -64,7 +66,7 @@ struct AdaptiveMapHandler {
     AdaptiveMapHandler(size_t ndims, size_t nbins);
     ~AdaptiveMapHandler();
     void Seed(size_t seed, size_t nevents, size_t threads=_threads);
-    void Sample(double *rans, double *wgts, uint16_t*, size_t nevents, size_t threads=_threads);
+    void Sample(double *rans, double *wgts, size_t nevents, size_t threads=_threads);
     void Adapt(double alpha, const std::vector<double> &data);
 };
 

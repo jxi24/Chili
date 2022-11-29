@@ -33,7 +33,7 @@ int main() {
     CheckCudaCall(cudaMalloc(&d_test, sizeof(test_functor))); 
     CheckCudaCall(cudaMemcpy(d_test, &h_test, sizeof(test_functor), cudaMemcpyHostToDevice));
 
-    for(size_t i = 0; i < 10; ++i) {
+    for(size_t i = 0; i < 100; ++i) {
         cudaEventRecord(start);
         vegas(&h_test);
         cudaEventRecord(stop);

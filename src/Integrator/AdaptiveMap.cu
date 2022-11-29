@@ -98,17 +98,17 @@ void AdaptiveMap::GenerateWeight(double *rans, double *wgts) const {
 }
 
 __device__
-void AdaptiveMap::SampleWeight(double *rans, double *wgts, uint16_t *index) const {
+void AdaptiveMap::SampleWeight(double *rans, double *wgts) const {
     // Batch index
     size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     wgts[idx] = 1.0;
     for(size_t i = 0; i < dims; ++i) {
         const auto position = rans[i + idx*dims] * static_cast<double>(bins);
-        index[idx*dims+i] = static_cast<size_t>(position);
-        const auto loc = position - static_cast<double>(index[idx*dims+i]);
-        const double left = lower_edge(i, index[idx*dims+i]);
-        const double size = width(i, index[idx*dims+i]);
+        uint16_t index = static_cast<size_t>(position);
+        const auto loc = position - static_cast<double>(index);
+        const double left = lower_edge(i, index);
+        const double size = width(i, index);
 
         // Calculate inverse CDF
         rans[i + idx*dims] = left + loc * size;
@@ -117,11 +117,29 @@ void AdaptiveMap::SampleWeight(double *rans, double *wgts, uint16_t *index) cons
 }
 
 __host__ __device__
-size_t AdaptiveMap::FindBin(size_t dim, double x) const {
-    for(size_t i = 1; i < bins+1; ++i) {
-        if(x < hist[dim*(bins+1)+i]) return i - 1;
+uint16_t AdaptiveMap::FindBin(size_t dim, double x) const {
+    double *edges = hist + dim*(bins+1);
+    uint16_t start = 0, i, end = bins;
+    while(start < end) {
+        i = start + (end - start) / 2;
+        if(edges[i] < x) {
+            start = i + 1;
+        } else {
+            end = i; 
+        }
     }
-    return bins+1;
+
+    return start-1;
+}
+
+__device__
+void AdaptiveMap::Histogram(double *rans, uint16_t *index) const {
+    // Batch index
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for(size_t i = 0; i < dims; ++i) {
+        index[idx*dims+i] = FindBin(i, rans[idx*dims+i]);
+    }
 }
 
 __host__
@@ -190,7 +208,7 @@ __global__ void apes::cuda::detail::SeedRandom(curandState *state, size_t seed) 
     curand_init(seed, id, 0, &state[id]);
 }
 
-__global__ void apes::cuda::detail::BatchSample(curandState *state, AdaptiveMap *map, double* rans, double* wgts, uint16_t *index) {
+__global__ void apes::cuda::detail::BatchSample(curandState *state, AdaptiveMap *map, double* rans, double* wgts) {
     size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     // Copy state to local memory for efficiency
@@ -202,7 +220,7 @@ __global__ void apes::cuda::detail::BatchSample(curandState *state, AdaptiveMap 
     }
 
     // Generate vegas random numbers and calculate weights
-    map -> SampleWeight(rans, wgts, index);
+    map -> SampleWeight(rans, wgts);
 
     // Copy state back to global memory
     state[idx] = localState;
@@ -235,9 +253,9 @@ void AdaptiveMapHandler::Seed(size_t seed, size_t nevents, size_t threads) {
     CheckCudaCall(cudaDeviceSynchronize());
 }
 
-void AdaptiveMapHandler::Sample(double *rans, double *wgts, uint16_t *index, size_t nevents, size_t threads) {
+void AdaptiveMapHandler::Sample(double *rans, double *wgts, size_t nevents, size_t threads) {
     size_t blocks = nevents/threads;
-    apes::cuda::detail::BatchSample<<<blocks, threads>>>(devStates, d_map, rans, wgts, index);
+    apes::cuda::detail::BatchSample<<<blocks, threads>>>(devStates, d_map, rans, wgts);
     CheckCudaCall(cudaDeviceSynchronize());
 }
 

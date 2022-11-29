@@ -32,7 +32,7 @@ __global__ void EvaluateFunc(Functor *op, double *rans, double *results, double 
     results[idx] = (*op)(&rans[idx*op->ndims])*wgt[idx];
 }
 
-__global__ void Histogram(AdaptiveMap*, uint16_t*, double*, double*, size_t);
+__global__ void Histogram(AdaptiveMap*, double*, double*, double*, size_t);
 
 }
 
@@ -44,13 +44,14 @@ class Vegas {
 
         template<typename Functor>
         void operator()(Functor *func, size_t threads=1024) {
+            static_assert(std::is_invocable_r_v<double, Functor, double*>, "Functor must be invocable"); 
+            static_assert(Functor::ndims > 0, "Functor has to have at least one dimension");
             thrust::device_vector<double> rans(m_map_handler.h_map->dims*m_params.ncalls);
-            thrust::device_vector<uint16_t> index(m_map_handler.h_map->dims*m_params.ncalls);
             thrust::device_vector<double> results(m_params.ncalls);
             thrust::device_vector<double> weights(m_params.ncalls);
 
             size_t blocks = m_params.ncalls/threads;
-            m_map_handler.Sample(rans.data().get(), weights.data().get(), index.data().get(), m_params.ncalls);
+            m_map_handler.Sample(rans.data().get(), weights.data().get(), m_params.ncalls);
             detail::EvaluateFunc<<<blocks, threads>>>(func,
                                                       rans.data().get(), results.data().get(),
                                                       weights.data().get());
@@ -65,7 +66,7 @@ class Vegas {
             m_summary.sum_results = binary_op(m_summary.sum_results, result);
 
             thrust::device_vector<double> train_data(m_map_handler.h_map->dims*m_map_handler.h_map->bins);
-            detail::Histogram<<<blocks, threads>>>(m_map_handler.d_map, index.data().get(), results.data().get(),
+            detail::Histogram<<<blocks, threads>>>(m_map_handler.d_map, rans.data().get(), results.data().get(),
                                                    train_data.data().get(), m_params.ncalls);
             std::vector<double> h_train_data(train_data.size());
             thrust::copy(train_data.begin(), train_data.end(), h_train_data.begin());
