@@ -65,11 +65,24 @@ int main() {
 
     // spdlog::set_level(spdlog::level::trace);
 
+    std::vector<std::vector<int>> processes{
+        {2, -2, 1, -1},
+        {-1, -2, 1, 2},
+        {1, -1, 2, -2, 2, -2},
+        {1, -1, 2, -2, 3, -3},
+        {1, -1, 1, -1, 21, 21, 21},
+        {1, -1, 2, -2, 21, 21, 21}
+    };
+
     // Construct channels
-    // auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1}, model, 1);
-    auto mappings = apes::ConstructChannels(13000, {-2, -1, 2, 1, 3, -3}, model, 1);
-    // auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 1);
-    std::cout << mappings.size() << std::endl;
+    for(const auto &process : processes) {
+        auto mappings = apes::ConstructChannels(13000, process, model, 0);
+        if(mappings.size() == 0)
+            throw std::logic_error(fmt::format("Failed process {{{}}}",
+                                               fmt::join(process.begin(), process.end(), ", ")));
+    }
+
+    auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1}, model, 1);
 
     // Setup integrator
     apes::Integrand<apes::FourVector> integrand;

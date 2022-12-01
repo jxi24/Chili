@@ -198,11 +198,11 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                 d.avail_currents.erase(d.avail_currents.begin()+static_cast<int>(i));
                 continue;
             }
-            if(!d.currents.empty()) {
-                // Ensure that one and only one particle is combined with an initial state
-                // Since the s-channel particles have already been combined
-                if(!(d.currents.back() & 3) && !(top.avail_currents[i] & 3)) continue;
-            }
+            // if(!d.currents.empty()) {
+            //     // Ensure that one and only one particle is combined with an initial state
+            //     // Since the s-channel particles have already been combined
+            //     if(!(d.currents.back() & 3) && !(top.avail_currents[i] & 3)) continue;
+            // }
             if(HaveCommonBitSet(d.idx_sum, top.avail_currents[i])) continue;
             std::set<int> combined;
             for(const auto &pid1 : d.pid) {
