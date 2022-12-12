@@ -26,12 +26,6 @@ struct VegasSummary {
 
 namespace detail {
 
-template<typename Functor>
-__global__ void EvaluateFunc(Functor *op, double *rans, double *results, double *wgt) {
-    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-    results[idx] = (*op)(&rans[idx*op->ndims])*wgt[idx];
-}
-
 __global__ void Histogram(AdaptiveMap*, double*, double*, double*, size_t);
 
 }
@@ -43,19 +37,15 @@ class Vegas {
         }
 
         template<typename Functor>
-        void operator()(Functor *func, size_t threads=1024) {
-            static_assert(std::is_invocable_r_v<double, Functor, double*>, "Functor must be invocable"); 
+        void operator()(Functor func, size_t threads=1024) {
+            static_assert(std::is_invocable_v<Functor, double*, double*, double*, size_t>, "Functor must be invocable with signature void(double*, double*, double*, size_t)"); 
             static_assert(Functor::ndims > 0, "Functor has to have at least one dimension");
             thrust::device_vector<double> rans(m_map_handler.h_map->dims*m_params.ncalls);
             thrust::device_vector<double> results(m_params.ncalls);
             thrust::device_vector<double> weights(m_params.ncalls);
 
-            size_t blocks = m_params.ncalls/threads;
             m_map_handler.Sample(rans.data().get(), weights.data().get(), m_params.ncalls);
-            detail::EvaluateFunc<<<blocks, threads>>>(func,
-                                                      rans.data().get(), results.data().get(),
-                                                      weights.data().get());
-            CheckCudaCall(cudaDeviceSynchronize());
+            func(rans.data().get(), results.data().get(), weights.data().get(), m_params.ncalls);
 
             summary_stats_unary_op<double> unary_op;
             summary_stats_binary_op<double> binary_op;
@@ -65,6 +55,7 @@ class Vegas {
             m_summary.results.push_back(result);
             m_summary.sum_results = binary_op(m_summary.sum_results, result);
 
+            size_t blocks = m_params.ncalls/threads;
             thrust::device_vector<double> train_data(m_map_handler.h_map->dims*m_map_handler.h_map->bins);
             detail::Histogram<<<blocks, threads>>>(m_map_handler.d_map, rans.data().get(), results.data().get(),
                                                    train_data.data().get(), m_params.ncalls);
@@ -72,12 +63,26 @@ class Vegas {
             thrust::copy(train_data.begin(), train_data.end(), h_train_data.begin());
             m_map_handler.Adapt(m_params.alpha, h_train_data);
 
-            std::cout << m_summary.results.back().mean << " +/- " << m_summary.results.back().error() << " " << m_summary.results.back().n << std::endl;
-
         }
         template<typename Functor>
-        void Optimize(Functor *func, size_t=1024);
+        void Optimize(Functor func, size_t=1024) {
+            double abs_err = std::numeric_limits<double>::max(), rel_err = std::numeric_limits<double>::max();
+            while((abs_err > m_params.atol && rel_err > m_params.rtol) || m_summary.results.size() < m_params.niterations) {
+                (*this)(func);
+                summary_stats_data<double> current = m_summary.Result();
+                abs_err = current.error();
+                rel_err = abs_err / std::abs(current.mean);
+
+                PrintIteration();
+            }
+        }
         void Adapt(const std::vector<double>&);
+
+        void PrintIteration() const {
+            std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
+                    m_summary.results.size(), m_summary.results.back().mean, m_summary.results.back().error(),
+                    m_summary.Result().mean, m_summary.Result().error()) << std::endl;
+        }
     private:
         AdaptiveMapHandler m_map_handler;
         VegasParams m_params;

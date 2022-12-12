@@ -14,9 +14,9 @@ struct summary_stats_data {
         max = std::numeric_limits<T>::min();
     }
 
-    T variance() { return (m2 - mean*mean) / (n-1); }
-    T variance_n() { return m2 / n; }
-    T error() { return std::sqrt(variance() / n); }
+    T variance() const { return (m2 - mean*mean) / (n-1); }
+    T variance_n() const { return m2 / n; }
+    T error() const { return std::sqrt(variance() / n); }
 };
 
 template<typename T>
