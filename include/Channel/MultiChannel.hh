@@ -62,6 +62,7 @@ class MultiChannel {
         void RefineChannels(Integrand<T> &func) {
             params.iteration = 0;
 	    params.ncalls = static_cast<size_t>(static_cast<double>(params.ncalls) * params.refine_size);
+            // params.ncalls = static_cast<size_t>(pow(static_cast<double>(params.ncalls), params.refine_size));
             for(auto &channel : func.Channels()) {
                 if(channel.integrator.Grid().Bins() < params.max_bins)
                     channel.integrator.Refine();

@@ -21,11 +21,15 @@ std::vector<int> combine(int i, int j) {
 }
 
 bool PreProcess(const std::vector<apes::FourVector> &mom) {
-    if(std::isnan(mom[0][0])) return false;
+    if(std::isnan(mom[0][0])) {
+        spdlog::trace("Failed inital state");
+        return false;
+    }
     if((mom[0]+mom[1]).Mass2() > 13000*13000) {
         spdlog::trace("Failed s limit");
         return false;
     }
+    return true;
     for(size_t i = 2; i < mom.size(); ++i) {
         if(mom[i].Pt() < 30) return false;
         if(std::abs(mom[i].Rapidity()) > 5) {
@@ -62,6 +66,10 @@ int main() {
     model.Width(-3) = 0;
     model.Width(23) = 2.5;
     model.Width(21) = 0;
+    model.Mass(5) = 172;
+    model.Width(5) = 5;
+    model.Mass(-5) = 172;
+    model.Width(-5) = 5;
 
     // spdlog::set_level(spdlog::level::trace);
 
@@ -75,14 +83,14 @@ int main() {
     };
 
     // Construct channels
-    for(const auto &process : processes) {
-        auto mappings = apes::ConstructChannels(13000, process, model, 0);
-        if(mappings.size() == 0)
-            throw std::logic_error(fmt::format("Failed process {{{}}}",
-                                               fmt::join(process.begin(), process.end(), ", ")));
-    }
+    // for(const auto &process : processes) {
+    //     auto mappings = apes::ConstructChannels(13000, process, model, 0);
+    //     if(mappings.size() == 0)
+    //         throw std::logic_error(fmt::format("Failed process {{{}}}",
+    //                                            fmt::join(process.begin(), process.end(), ", ")));
+    // }
 
-    auto mappings = apes::ConstructChannels(13000, {2, -2, 1, -1}, model, 1);
+    auto mappings = apes::ConstructChannels(13000, {21, 21, 5, -5}, model, 1);
 
     // Setup integrator
     apes::Integrand<apes::FourVector> integrand;
