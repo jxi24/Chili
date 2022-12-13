@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <iostream>
+
 namespace apes {
 
 struct Cuts {
@@ -17,10 +19,9 @@ struct Cuts {
 };
 
 inline double SMax(double sqrts, const Cuts &cuts, unsigned int idx) {
-    idx >>= 2;
     double result = sqrts;
     for(unsigned int i = 0; i < cuts.sexternal.size(); ++i) {
-        if(BitIsSet(idx, i)) {
+        if(!BitIsSet(idx, i+2)) {
             result -= sqrt(cuts.sexternal[i]);
         }
     }

@@ -55,6 +55,10 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     cuts.deltaR[{3, 21}] = 0.4;
     cuts.deltaR[{21, -3}] = 0.4;
     cuts.deltaR[{21, 3}] = 0.4;
+    cuts.deltaR[{5, -5}] = 0.4;
+    cuts.deltaR[{-5, 5}] = 0.4;
+    cuts.deltaR[{21, 5}] = 0.4;
+    cuts.deltaR[{21, -5}] = 0.4;
 
     // Setup initial states
     for(size_t i = 0; i < flavs.size(); ++i) {
