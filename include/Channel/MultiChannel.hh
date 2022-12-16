@@ -23,8 +23,8 @@ struct MultiChannelParams {
     size_t max_bins{max_bins_default};
     size_t iteration{};
 
-    static constexpr size_t ncalls_default{10000}, nint_default{10};
-    static constexpr double rtol_default{1e-2};
+    static constexpr size_t ncalls_default{10000}, nint_default{20};
+    static constexpr double rtol_default{1e-5};
     static constexpr size_t nrefine_default{1};
     static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
     static constexpr double refine_size_default{1.5};
@@ -94,20 +94,27 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         Random::Instance().Generate(rans);
 
         // Select a channel
-        size_t ichannel = Random::Instance().SelectIndex(channel_weights); 
+        size_t ichannel = Random::Instance().SelectIndex(channel_weights);
 
         // Map the point based on the channel
         func.GeneratePoint(ichannel, rans, point);
 
         // Preprocess event to determine if a valid point was created (i.e. cuts)
         if(!func.PreProcess()(point)) {
+            --i;
             results += 0;
             continue;
         }
-
         // Evaluate the function at this point
         double wgt = func.GenerateWeight(channel_weights, point, densities);
         double val = wgt == 0 ? 0 : func(point)*wgt;
+        // if(std::isnan(wgt)){
+        //   std::cout << "nan encountered" << std::endl;
+        //   for(auto p : point)
+        //     std::cout << p << std::endl;
+        //   std::cout << func(point) << std::endl;
+        // }
+
         double val2 = val * val;
         func.AddTrainData(ichannel, val2);
 
@@ -126,10 +133,10 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 
         results += val;
     }
-
     Adapt(train_data);
     func.Train();
     MaxDifference(train_data);
+    results.n_nonzero = params.ncalls;
     summary.results.push_back(results);
     summary.sum_results += results;
 }
@@ -137,7 +144,8 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 template<typename T>
 void apes::MultiChannel::Optimize(Integrand<T> &func) {
     double rel_err = lim::max();
-    while((rel_err > params.rtol) || summary.results.size() < params.niterations) {
+
+    while((rel_err > params.rtol) && summary.results.size() < params.niterations) {
         (*this)(func);
         StatsData current = summary.sum_results;
         rel_err = current.Error() / std::abs(current.Mean());

@@ -1,4 +1,5 @@
 #include "Channel/MultiChannel.hh"
+#include <ctime>
 
 apes::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_) 
                                      : ndims{std::move(dims)}, params{std::move(params_)} {
@@ -67,7 +68,18 @@ apes::MultiChannelSummary apes::MultiChannel::Summary() {
 }
 
 void apes::MultiChannel::PrintIteration() const {
-  std::cout << fmt::format("XS: {:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}    Points: {:3d}",
+  size_t total_points{0}, total_nonzero{0};
+  for(auto sum : summary.results){
+    total_points += sum.Calls();
+    total_nonzero += sum.n_nonzero;
+  }
+
+  std::time_t t = std::time(0);
+  std::tm* now = std::localtime(&t);
+  std::cout << fmt::format("XS: {:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}    Points: {:3d}/{:3d}    Total: {:3d}/{:3d}   Time: {}:{}:{}",
             summary.results.size(), summary.results.back().Mean(), summary.results.back().Error(),
-			     summary.Result().Mean(), summary.Result().Error(), summary.results.back().Calls()) << std::endl;
+                           summary.Result().Mean(), summary.Result().Error(), summary.results.back().n_nonzero,
+                           summary.results.back().Calls(),
+                           total_nonzero, total_points,
+                           now->tm_hour,now->tm_min,now->tm_sec) << std::endl;
 }

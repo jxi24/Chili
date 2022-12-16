@@ -22,43 +22,14 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     DecayChain decayChain;
     Cuts cuts;
     // TODO: Make this nicer with alias to jet particle
-    cuts.deltaR[{-1, -1}] = 0.4;
-    cuts.deltaR[{-1, 1}] = 0.4;
-    cuts.deltaR[{-1, 2}] = 0.4;
-    cuts.deltaR[{-1, -2}] = 0.4;
-    cuts.deltaR[{-1, 21}] = 0.4;
-    cuts.deltaR[{1, -1}] = 0.4;
-    cuts.deltaR[{1, 1}] = 0.4;
-    cuts.deltaR[{1, 2}] = 0.4;
-    cuts.deltaR[{1, -2}] = 0.4;
-    cuts.deltaR[{1, 21}] = 0.4;
-    cuts.deltaR[{2, -1}] = 0.4;
-    cuts.deltaR[{2, 1}] = 0.4;
-    cuts.deltaR[{2, 2}] = 0.4;
-    cuts.deltaR[{2, -2}] = 0.4;
-    cuts.deltaR[{2, 21}] = 0.4;
-    cuts.deltaR[{-2, -1}] = 0.4;
-    cuts.deltaR[{-2, 1}] = 0.4;
-    cuts.deltaR[{-2, 2}] = 0.4;
-    cuts.deltaR[{-2, -2}] = 0.4;
-    cuts.deltaR[{-2, 21}] = 0.4;
-    cuts.deltaR[{21, -1}] = 0.4;
-    cuts.deltaR[{21, 1}] = 0.4;
-    cuts.deltaR[{21, 2}] = 0.4;
-    cuts.deltaR[{21, -2}] = 0.4;
-    cuts.deltaR[{21, 21}] = 0.4;
-    cuts.deltaR[{-3, -3}] = 0.4;
-    cuts.deltaR[{-3, 3}] = 0.4;
-    cuts.deltaR[{-3, 21}] = 0.4;
-    cuts.deltaR[{3, -3}] = 0.4;
-    cuts.deltaR[{3, 3}] = 0.4;
-    cuts.deltaR[{3, 21}] = 0.4;
-    cuts.deltaR[{21, -3}] = 0.4;
-    cuts.deltaR[{21, 3}] = 0.4;
-    cuts.deltaR[{5, -5}] = 0.4;
-    cuts.deltaR[{-5, 5}] = 0.4;
-    cuts.deltaR[{21, 5}] = 0.4;
-    cuts.deltaR[{21, -5}] = 0.4;
+
+    for(auto f1 : flavs){
+      for(auto f2 : flavs) {
+        // do we really need this between all outgoing particles?
+        // not sure if this is correct for the leptons
+        cuts.deltaR[{f1, f2}] = 0.4;
+      }
+    }
 
     // Setup initial states
     for(size_t i = 0; i < flavs.size(); ++i) {
@@ -249,7 +220,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     // Convert channel descriptions to mappings
     std::vector<std::unique_ptr<FSMapper>> mappings;
     for(auto ch_descr : channels) {
-        spdlog::info("Channel: {}", ToString(ch_descr));
+        spdlog::trace("Channel: {}", ToString(ch_descr));
         mappings.emplace_back(std::make_unique<FSMapper>(sqrts, flavs.size(), ch_descr, cuts));
     }
 
