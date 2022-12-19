@@ -32,7 +32,7 @@ CPMAddPackage(
         "YAML_CPP_BUILD_CONTRIB OFF"
         "YAML_CPP_BUILD_TOOLS OFF"
 )
-add_library(yaml::cpp ALIAS yaml-cpp)
+#add_library(yaml::cpp ALIAS yaml-cpp)
 
 # Install testing framework
 if(ENABLE_TESTING OR ENABLE_FUZZING)
