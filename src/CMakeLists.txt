@@ -30,7 +30,7 @@ target_link_libraries(apes PUBLIC Channel)
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-set_target_properties(Tools Integrator Channel apes PROPERTIES
+set_target_properties(Tools Integrator Channel apes spdlog fmt yaml-cpp PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin

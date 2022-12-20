@@ -22,7 +22,6 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     DecayChain decayChain;
     Cuts cuts;
     // TODO: Make this nicer with alias to jet particle
-
     for(auto f1 : flavs){
       for(auto f2 : flavs) {
         // do we really need this between all outgoing particles?
