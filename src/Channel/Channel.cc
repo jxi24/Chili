@@ -50,7 +50,8 @@ void FSMapper::GenDecays(SparseMass &masses2, const std::vector<double> &rans) {
         const auto part2 = decay.second.second;
         double smin1 = pow(sqrt(masses2[part1.idx])
                           + sqrt(masses2[part2.idx]), 2);
-        double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
+        double deltaR = m_cuts.deltaR.find({part1.pid, part2.pid}) == m_cuts.deltaR.end() 
+            ? 0 : m_cuts.deltaR.at({part1.pid, part2.pid});
         double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
         double smin = std::max(smin1, smin2);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
