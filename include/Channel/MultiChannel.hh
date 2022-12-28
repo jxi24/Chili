@@ -113,6 +113,8 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         if(val2 != 0) {
             for(size_t j = 0; j < nchannels; ++j) {
                 train_data[j] += val2 * wgt / densities[j];
+		spdlog::debug("val2 = {}, wgt = {}, densities[{}] = {}, tain_data[{}] = {}",
+			      val2, wgt, j, densities[j], j, train_data[j]);
             }
         }
 
