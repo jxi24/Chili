@@ -23,7 +23,7 @@ struct MultiChannelParams {
     size_t max_bins{max_bins_default};
     size_t iteration{};
 
-    static constexpr size_t ncalls_default{10000}, nint_default{20};
+    static constexpr size_t ncalls_default{10000}, nint_default{10};
     static constexpr double rtol_default{1e-5};
     static constexpr size_t nrefine_default{1};
     static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
@@ -108,12 +108,6 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         // Evaluate the function at this point
         double wgt = func.GenerateWeight(channel_weights, point, densities);
         double val = wgt == 0 ? 0 : func(point)*wgt;
-        // if(std::isnan(wgt)){
-        //   std::cout << "nan encountered" << std::endl;
-        //   for(auto p : point)
-        //     std::cout << p << std::endl;
-        //   std::cout << func(point) << std::endl;
-        // }
 
         double val2 = val * val;
         func.AddTrainData(ichannel, val2);
