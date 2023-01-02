@@ -3,6 +3,7 @@
 #include "Channel/MultiChannel.hh"
 #include "Model/Model.hh"
 #include "Channel/Channel.hh"
+#include "Tools/JetCluster.hh"
 #include <iostream>
 
 std::vector<int> combine(int i, int j) { 
@@ -29,6 +30,9 @@ bool PreProcess(const std::vector<apes::FourVector> &mom) {
         spdlog::trace("Failed s limit");
         return false;
     }
+    apes::JetCluster cluster(0.4);
+    auto jets = cluster(mom);
+    if(jets.size() < mom.size()) return false;
     return true;
     for(size_t i = 2; i < mom.size(); ++i) {
         if(mom[i].Pt() < 30) return false;
@@ -71,7 +75,7 @@ int main() {
     model.Mass(-5) = 172;
     model.Width(-5) = 5;
 
-    // spdlog::set_level(spdlog::level::trace);
+    spdlog::set_level(spdlog::level::trace);
 
     std::vector<std::vector<int>> processes{
         {2, -2, 1, -1},
@@ -90,7 +94,7 @@ int main() {
     //                                            fmt::join(process.begin(), process.end(), ", ")));
     // }
 
-    auto mappings = apes::ConstructChannels(13000, {21, 21, 5, -5}, model, 1);
+    auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 1);
 
     // Setup integrator
     apes::Integrand<apes::FourVector> integrand;

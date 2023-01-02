@@ -16,6 +16,7 @@ void apes::MultiChannel::Adapt(const std::vector<double> &train) {
     for(size_t i = 0; i < new_weights.size(); ++i) {
         new_weights[i] = channel_weights[i] * pow(train[i], params.beta);
         sum_wgts += new_weights[i];
+    	spdlog::debug("sum_wgts = {}, train[{}] = {}", sum_wgts, i, train[i]);
     }
 
     double new_sum = 0;
@@ -24,6 +25,7 @@ void apes::MultiChannel::Adapt(const std::vector<double> &train) {
         wgt /= sum_wgts;
         wgt = std::max(wgt, params.min_alpha);
         new_sum += wgt;
+    	spdlog::debug("new_wgts = {}", new_sum);
     }
 
     size_t idx = 0;
