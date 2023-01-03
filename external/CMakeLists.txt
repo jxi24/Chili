@@ -4,6 +4,11 @@ CPMFindPackage(
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
+install(TARGETS fmt
+  EXPORT fmt
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
 
 CPMFindPackage(
     NAME spdlog
