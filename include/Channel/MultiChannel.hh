@@ -112,6 +112,12 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         double val2 = val * val;
         func.AddTrainData(ichannel, val2);
 
+        if(std::isnan(val2)){
+          std::cerr << "Encountered nan in integration" << std::endl;
+          std::cerr << "func = " << func(point) << std::endl;
+          std::cerr << "weight = " << wgt << std::endl;
+        }
+
         if(val2 != 0) {
             for(size_t j = 0; j < nchannels; ++j) {
                 train_data[j] += val2 * wgt / densities[j];

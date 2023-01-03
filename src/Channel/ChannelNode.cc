@@ -26,7 +26,11 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
       for(auto f2 : flavs) {
         // do we really need this between all outgoing particles?
         // not sure if this is correct for the leptons
-        cuts.deltaR[{f1, f2}] = 0.4;
+        // probably wrong for ttbar
+        if(std::abs(f1) == 6 or std::abs(f2) == 6)
+          cuts.deltaR[{f1, f2}] = 0.0001;
+        else
+          cuts.deltaR[{f1, f2}] = 0.4;
       }
     }
 
