@@ -4,11 +4,12 @@ CPMFindPackage(
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
+
 install(TARGETS fmt
   EXPORT fmt
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY ${FMT_SOURCE_DIR}/include/fmt
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 CPMFindPackage(
     NAME spdlog
@@ -21,12 +22,22 @@ CPMFindPackage(
 )
 add_library(spdlog::spdlog ALIAS spdlog)
 
+install(TARGETS spdlog
+  EXPORT spdlog
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY ${spdlog_SOURCE_DIR}/include/spdlog
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+
 CPMAddPackage(
     NAME docopt
     GIT_TAG v0.6.3
     GITHUB_REPOSITORY docopt/docopt.cpp
 )
 add_library(docopt::docopt ALIAS docopt)
+install(TARGETS docopt
+  EXPORT docopt
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 CPMAddPackage(
     NAME yaml-cpp
@@ -37,7 +48,12 @@ CPMAddPackage(
         "YAML_CPP_BUILD_CONTRIB OFF"
         "YAML_CPP_BUILD_TOOLS OFF"
 )
-#add_library(yaml::cpp ALIAS yaml-cpp)
+
+install(TARGETS yaml-cpp
+  EXPORT yaml-cpp
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY ${YAML_CPP_SOURCE_DIR}/include/yaml-cpp
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Install testing framework
 if(ENABLE_TESTING OR ENABLE_FUZZING)
@@ -53,6 +69,6 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
     CPMAddPackage(
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
-        VERSION 37 
+        VERSION 37
     )
 endif()
