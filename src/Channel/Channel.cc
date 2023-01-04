@@ -56,7 +56,7 @@ void FSMapper::GenDecays(SparseMass &masses2, const std::vector<double> &rans) {
         double smin = std::max(std::max(smin1, smin2), m_cuts.smin[part1.idx|part2.idx]);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
         if(std::abs(decay.first.mass) < 1e-16) {
-            masses2[decay.first.idx] = MasslessPropMomenta(smin, smax, rans[iran++]); 
+	    masses2[decay.first.idx] = MasslessPropMomenta(0.99,smin, smax, rans[iran++]);
         } else {
             masses2[decay.first.idx] = MassivePropMomenta(decay.first.mass, decay.first.width,
                                                           smin, smax, rans[iran++]); 
@@ -77,7 +77,7 @@ double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
         double smin = std::max(std::max(smin1, smin2), m_cuts.smin[part1.idx|part2.idx]);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
         if(std::abs(decay.first.mass) < 1e-16) {
-            wgt *= MasslessPropWeight(smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
+	    wgt *= MasslessPropWeight(0.99,smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
         } else {
             wgt *= MassivePropWeight(decay.first.mass, decay.first.width,
                                      smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
@@ -93,13 +93,13 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         const double ran = rans[iran++];
         double pt{};
-        if(!IsPower2(m_channel.info[i].idx) || m_ptmin[i]==0)
+        // if(!IsPower2(m_channel.info[i].idx))
             pt = 2*m_ptmin[i]*m_ptmax*ran/(2*m_ptmin[i]+m_ptmax*(1-ran));
-	else {
-            double hmin = 1/m_ptmax;
-            double hmax = 1/m_ptmin[i];
-            pt = 1/(hmin+ran*(hmax-hmin));
-        }
+	// else {
+        //     double hmin = 1/m_ptmax;
+        //     double hmax = 1/m_ptmin[i];
+        //     pt = 1/(hmin+ran*(hmax-hmin));
+        // }
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
         etamax = std::min(etamax, m_cuts.etamax.at(m_channel.info[i].idx));
@@ -138,15 +138,15 @@ double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         wgt *= 1.0/(16*pow(M_PI, 3));
         double pt = mom.at(m_channel.info[i].idx).Pt();
-        if(!IsPower2(m_channel.info[i].idx) || m_ptmin[i]==0) {
+        // if(!IsPower2(m_channel.info[i].idx)) {
             wgt *= pt*m_ptmax/2/m_ptmin[i]/(2*m_ptmin[i]+m_ptmax)*pow(2*m_ptmin[i]+pt, 2);
             rans[iran++] = pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
-	} else {
-            double hmin = 1/m_ptmax;
-            double hmax = 1/m_ptmin[i];
-            rans[iran++] = (1/pt-hmin)/(hmax-hmin);
-            wgt *= (hmax-hmin)*pt*pt*pt;
-        }
+	// } else {
+        //     double hmin = 1/m_ptmax;
+        //     double hmax = 1/m_ptmin[i];
+        //     rans[iran++] = (1/pt-hmin)/(hmax-hmin);
+        //     wgt *= (hmax-hmin)*pt*pt*pt;
+        // }
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
         etamax = std::isnan(etamax) ? 99 : etamax;

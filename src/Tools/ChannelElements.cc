@@ -24,28 +24,41 @@ double apes::SqLam(double s,double s1,double s2) {
   return 0.;
 }
 
-double apes::MasslessPropWeight(double smin,double smax,const double s,double &ran) {
-  if (s<smin || s>smax)
-   spdlog::error("MasslessPropWeight(): Value out of bounds: {} .. {} vs. {}",smin,smax,s);
-  // double hmin = 1/smax;
-  // double hmax = 1/smin;
-  // double delh = hmax-hmin;
-  // ran = (1.0/s-hmin)/delh;
-  // double w = delh*pow(s, 3);
-  ran = log(s/smin)/log(smax/smin);
-  double w = s*log(smax/smin);
-  if (IsBad(w)) spdlog::error("MasslessPropWeight(): Weight is {}",w);
+double apes::PeakedDist(double a,double cn,double cxm,double cxp,int k,double ran)
+{
+  double ce(1.-cn);
+  if (ce!=0.) return k*(pow(ran*pow(a+k*cxp,ce)+(1.-ran)*pow(a+k*cxm,ce),1/ce)-a);
+  return k*((a+k*cxm)*pow((a+k*cxp)/(a+k*cxm),ran)-a);
+}
+
+double apes::PeakedWeight(double a,double cn,double cxm,double cxp,double res,int k,double &ran)
+{
+  double ce(1.-cn), w;
+  if (ce!=0.) {
+    double amin=pow(a+k*cxm,ce);
+    w=pow(a+k*cxp,ce)-amin;
+    ran=(pow(a+k*res,ce)-amin)/w;
+    w/=k*ce;
+  }
+  else {
+    double amin=a+k*cxm;
+    w=log((a+k*cxp)/amin);
+    ran=log((a+k*res)/amin)/w;
+    w/=k;
+  }
   return w;
 }
 
-double apes::MasslessPropMomenta(double smin,double smax, double ran) {
-  // double hmin = 1/smax;
-  // double hmax = 1/smin;
-  // double delh = hmax-hmin;
-  // double s = 1.0/(delh*ran+hmin);
-  double s = smin*pow(smax/smin, ran);
-  if (IsBad(s)) spdlog::error("MasslessPropMomenta(): Value is {}",s);
-  return s;
+double apes::MasslessPropWeight
+(double sexp,double smin,double smax,const double s,double &ran)
+{
+  return PeakedWeight(0.,sexp,smin,smax,s,1,ran)/pow(s,-sexp);
+}
+
+double apes::MasslessPropMomenta
+(double sexp,double smin,double smax, double ran)
+{
+  return PeakedDist(0.,sexp,smin,smax,1,ran);
 }
 
 double apes::MassivePropWeight(double m,double g,double smin,double smax,double s,double &ran) {
@@ -70,27 +83,6 @@ double apes::MassivePropMomenta
   if (IsBad(s)) spdlog::error("MassivePropMomenta(): Value is {}",s);
   return s;
 }
-
-// double apes::ThresholdWeight
-// (double sexp,double m,double smin,double smax,double s,double &ran)
-// {
-//   if (s<smin || s>smax) spdlog::error("ThresholdWeight(): Value out of bounds: {} .. {} vs. {}",smin,smax,s);
-//   double m2(m*m), sg(sqrt(s*s+m2*m2));
-//   double sgmin(sqrt(smin*smin+m2*m2)), sgmax(sqrt(smax*smax+m2*m2));
-//   double w=PeakedWeight(0.,sexp,sgmin,sgmax,sg,1,ran)/(s*pow(sg,-sexp-1.));
-//   if (IsBad(w)) spdlog::error("ThresholdWeight(): Weight is {}",w);
-//   return 1./w;
-// }
-// 
-// double apes::ThresholdMomenta
-// (double sexp,double m,double smin,double smax,double ran)
-// {
-//   double m2(m*m);
-//   double sgmin(sqrt(smin*smin+m2*m2)), sgmax(sqrt(smax*smax+m2*m2));
-//   double s(sqrt(sqr(PeakedDist(0.,sexp,sgmin,sgmax,1,ran))-m2*m2));
-//   if (IsBad(s)) spdlog::error("ThresholdMomenta(): Value is {}",s);
-//   return s;
-// }
 
 void apes::SChannelMomenta
 (FourVector p,double s1,double s2,FourVector &p1,FourVector &p2,double ran1,
