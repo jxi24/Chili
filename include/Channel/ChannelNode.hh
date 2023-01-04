@@ -42,7 +42,7 @@ struct DataFrame {
 };
 
 struct ChannelDescription {
-    std::vector<ParticleInfo> info; 
+    std::vector<ParticleInfo> info;
     DecayMap decays{};
 };
 using ChannelVec = std::vector<ChannelDescription>;
@@ -81,5 +81,6 @@ inline std::string ToString(ChannelDescription channel) {
 std::string ToString(DecayChain chain);
 
 std::vector<std::unique_ptr<FSMapper>> ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax=2);
+std::vector<std::unique_ptr<FSMapper>> ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, Cuts& cuts, size_t smax=2);
 
 }
