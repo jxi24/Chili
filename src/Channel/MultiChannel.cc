@@ -78,10 +78,11 @@ void apes::MultiChannel::PrintIteration() const {
 
   std::time_t t = std::time(0);
   std::tm* now = std::localtime(&t);
-  std::cout << fmt::format("XS: {:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}    Points: {:3d}/{:3d}    Total: {:3d}/{:3d}   Time: {}:{}:{}",
-            summary.results.size(), summary.results.back().Mean(), summary.results.back().Error(),
-                           summary.Result().Mean(), summary.Result().Error(), summary.results.back().n_nonzero,
-                           summary.results.back().Calls(),
+  std::cout << fmt::format("XS: {:3d}   {:^8.5e} +/- {:^8.5e} ({:^2.3f}%)   Points: {:3d}/{:3d} ({:^2.2f}%)   Total: {:3d}/{:3d}   Time: {:02d}:{:02d}:{:02d}",
+            summary.results.size(),
+                           summary.Result().Mean(), summary.Result().Error(),summary.Result().Error()/summary.Result().Mean()*100,
+                           summary.results.back().n_nonzero,
+                           summary.results.back().Calls(),summary.results.back().n_nonzero*1./summary.results.back().Calls()*100,
                            total_nonzero, total_points,
-                           now->tm_hour,now->tm_min,now->tm_sec) << std::endl;
+                           static_cast<int>(now->tm_hour),now->tm_min,now->tm_sec) << std::endl;
 }
