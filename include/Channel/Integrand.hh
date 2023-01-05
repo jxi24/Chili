@@ -71,7 +71,7 @@ class Integrand {
         // Interface to MultiChannel integration
         void GeneratePoint(size_t channel, std::vector<double> &rans, std::vector<T> &point) const {
             channels[channel].integrator.Grid()(rans);
-            channels[channel].mapping -> GeneratePoint(point, rans); 
+            channels[channel].mapping -> GeneratePoint(point, rans);
         }
         double GenerateWeight(const std::vector<double> &wgts, const std::vector<T> &point,
                               std::vector<double> &densities) {

@@ -46,7 +46,7 @@ class Percentile {
         }
 
         double Get() const { return m_lower.front(); }
-        
+
         void Clear() {
             m_lower.clear();
             m_upper.clear();
@@ -118,8 +118,9 @@ class StatsData {
 
         friend YAML::convert<apes::StatsData>;
 
-    private:
-        double n{}, min{lim::max()}, max{lim::min()}, sum{}, sum2{}, n_finite{};
+  size_t n_nonzero;
+private:
+  double n{}, min{lim::max()}, max{lim::min()}, sum{}, sum2{}, n_finite{};
 };
 
 }

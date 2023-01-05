@@ -50,8 +50,8 @@ add_subdirectory(external)
 
 # Testing
 if(ENABLE_TESTING)
-    if(COVERAGE) 
-        target_compile_options(project_options INTERFACE --coverage) 
+    if(COVERAGE)
+        target_compile_options(project_options INTERFACE --coverage)
         target_link_libraries(project_options INTERFACE gcov)
     endif()
     target_compile_definitions(project_options INTERFACE TESTING)
@@ -70,6 +70,8 @@ configure_package_config_file(
     ${CMAKE_SOURCE_DIR}/CMake/apes-config.cmake.in
     ${CMAKE_BINARY_DIR}/CMake/apes-config.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/apes
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+              CMAKE_INSTALL_LIBDIR
 )
 
 configure_package_config_file(

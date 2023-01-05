@@ -16,49 +16,38 @@ std::string WriteCurrent(size_t cur) {
     return ss.str();
 }
 
-// TODO: Refactor code to be less messy
 std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax) {
-    Current currentComponents;
-    DecayChain decayChain;
     Cuts cuts;
     // TODO: Make this nicer with alias to jet particle
-    cuts.deltaR[{-1, -1}] = 0.4;
-    cuts.deltaR[{-1, 1}] = 0.4;
-    cuts.deltaR[{-1, 2}] = 0.4;
-    cuts.deltaR[{-1, -2}] = 0.4;
-    cuts.deltaR[{-1, 21}] = 0.4;
-    cuts.deltaR[{1, -1}] = 0.4;
-    cuts.deltaR[{1, 1}] = 0.4;
-    cuts.deltaR[{1, 2}] = 0.4;
-    cuts.deltaR[{1, -2}] = 0.4;
-    cuts.deltaR[{1, 21}] = 0.4;
-    cuts.deltaR[{2, -1}] = 0.4;
-    cuts.deltaR[{2, 1}] = 0.4;
-    cuts.deltaR[{2, 2}] = 0.4;
-    cuts.deltaR[{2, -2}] = 0.4;
-    cuts.deltaR[{2, 21}] = 0.4;
-    cuts.deltaR[{-2, -1}] = 0.4;
-    cuts.deltaR[{-2, 1}] = 0.4;
-    cuts.deltaR[{-2, 2}] = 0.4;
-    cuts.deltaR[{-2, -2}] = 0.4;
-    cuts.deltaR[{-2, 21}] = 0.4;
-    cuts.deltaR[{21, -1}] = 0.4;
-    cuts.deltaR[{21, 1}] = 0.4;
-    cuts.deltaR[{21, 2}] = 0.4;
-    cuts.deltaR[{21, -2}] = 0.4;
-    cuts.deltaR[{21, 21}] = 0.4;
-    cuts.deltaR[{-3, -3}] = 0.4;
-    cuts.deltaR[{-3, 3}] = 0.4;
-    cuts.deltaR[{-3, 21}] = 0.4;
-    cuts.deltaR[{3, -3}] = 0.4;
-    cuts.deltaR[{3, 3}] = 0.4;
-    cuts.deltaR[{3, 21}] = 0.4;
-    cuts.deltaR[{21, -3}] = 0.4;
-    cuts.deltaR[{21, 3}] = 0.4;
-    cuts.deltaR[{5, -5}] = 0.4;
-    cuts.deltaR[{-5, 5}] = 0.4;
-    cuts.deltaR[{21, 5}] = 0.4;
-    cuts.deltaR[{21, -5}] = 0.4;
+    for(auto f1 : flavs){
+      for(auto f2 : flavs) {
+        // do we really need this between all outgoing particles?
+        // not sure if this is correct for the leptons
+        // probably wrong for ttbar
+        if(std::abs(f1) == 6 or std::abs(f2) == 6)
+          cuts.deltaR[{f1, f2}] = 0.;
+        else
+          cuts.deltaR[{f1, f2}] = 0.4;
+      }
+    }
+    for(size_t i = 0; i < flavs.size(); ++i) {
+        ParticleInfo info;
+        info.idx = 1 << i;
+        info.pid = flavs[i];
+        info.mass = model.Mass(info.pid);
+        cuts.smin[info.idx] = info.mass*info.mass;
+        // TODO: Make this read in
+        cuts.ptmin[info.idx] = 30;
+        cuts.etamax[info.idx] = 99;
+        if(i > 1) cuts.sexternal.push_back(info.mass*info.mass);
+    }
+    return apes::ConstructChannels(sqrts, flavs, model, cuts, smax);
+}
+
+// TODO: Refactor code to be less messy
+std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, Cuts& cuts, size_t smax) {
+    Current currentComponents;
+    DecayChain decayChain;
 
     // Setup initial states
     for(size_t i = 0; i < flavs.size(); ++i) {
@@ -68,11 +57,6 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         info.mass = model.Mass(info.pid);
         info.width = model.Width(info.pid);
         currentComponents[info.idx].insert(info);
-        cuts.smin[info.idx] = info.mass*info.mass;
-        // TODO: Make this read in
-        cuts.ptmin[info.idx] = 30;
-        cuts.etamax[info.idx] = 99;
-        if(i > 1) cuts.sexternal.push_back(info.mass*info.mass);
     }
 
     // Recursion over all set particles
@@ -115,7 +99,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                         idx = NextPermutation(idx);
                         continue;
                     }
-                            
+
                     for(const auto & elm : combined) {
                         ParticleInfo info;
                         info.pid = elm;
@@ -249,7 +233,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     // Convert channel descriptions to mappings
     std::vector<std::unique_ptr<FSMapper>> mappings;
     for(auto ch_descr : channels) {
-        spdlog::info("Channel: {}", ToString(ch_descr));
+        spdlog::trace("Channel: {}", ToString(ch_descr));
         mappings.emplace_back(std::make_unique<FSMapper>(sqrts, flavs.size(), ch_descr, cuts));
     }
 
