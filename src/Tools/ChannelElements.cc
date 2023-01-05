@@ -122,7 +122,14 @@ double apes::SChannelWeight
   ran2=atan2(sp,cp)/(2.*M_PI);
   if (ran2<0.) ran2+=1.;
   double w((ctmax-ctmin)/2.);
-  w*=SqLam(p.Mass2(),p1.Mass2(),p2.Mass2())/(8.*M_PI);
+  double s1 = std::max(p1.Mass2(),0.);
+  double s2 = std::max(p2.Mass2(),0.);
+  double s  = p.Mass2();
+  if(s1 == 0. && s2 == 0.)
+    s = p1.SmallMLDP(p2);
+
+  w*=SqLam(s,s1,s2)/(8.*M_PI);
+  //w*=SqLam(p.Mass2(),p1.Mass2(),p2.Mass2())/(8.*M_PI);
   if (IsBad(w)) spdlog::error("SChannelWeight(): Weight is {}.",w);
   return w;
 }
