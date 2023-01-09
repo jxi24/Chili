@@ -1,7 +1,7 @@
 #include "Channel/MultiChannel.hh"
 #include <ctime>
 
-apes::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_) 
+apes::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_)
                                      : ndims{std::move(dims)}, params{std::move(params_)} {
     for(size_t i = 0; i < nchannels; ++i) {
         channel_weights.push_back(1.0/static_cast<double>(nchannels));

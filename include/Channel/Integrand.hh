@@ -73,6 +73,7 @@ class Integrand {
             channels[channel].integrator.Grid()(rans);
             channels[channel].mapping -> GeneratePoint(point, rans);
         }
+
         double GenerateWeight(const std::vector<double> &wgts, const std::vector<T> &point,
                               std::vector<double> &densities) {
             double weight{};
@@ -85,6 +86,19 @@ class Integrand {
             }
             return 1.0 / weight;
         }
+
+        double GenerateWeight(const std::vector<double> &wgts, const std::vector<T> &point,
+                              std::vector<double> &densities) const {
+            double weight{};
+            std::vector<double> rans;
+            for(size_t i = 0; i < NChannels(); ++i) {
+                densities[i] = channels[i].mapping -> GenerateWeight(point, rans);
+                double vw = channels[i].integrator.GenerateWeight(rans);
+                weight += wgts[i] / densities[i] / vw;
+            }
+            return 1.0 / weight;
+        }
+
 
         // YAML interface
         friend YAML::convert<apes::Integrand<T>>;

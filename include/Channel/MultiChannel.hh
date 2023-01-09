@@ -22,7 +22,7 @@ struct MultiChannelParams {
     double refine_size{refine_size_default};
     size_t max_bins{max_bins_default};
     size_t iteration{};
-
+    bool   should_optimize{should_optimize_default};
     static constexpr size_t ncalls_default{10000}, nint_default{10};
     static constexpr double rtol_default{1e-5};
     static constexpr size_t nrefine_default{1};
@@ -30,6 +30,7 @@ struct MultiChannelParams {
     static constexpr double refine_size_default{1.5};
     static constexpr size_t max_bins_default{200};
     static constexpr size_t nparams = 8;
+    static constexpr bool   should_optimize_default{true};
 };
 
 class MultiChannel {
@@ -48,6 +49,19 @@ class MultiChannel {
         void operator()(Integrand<T>&);
         template<typename T>
         void Optimize(Integrand<T>&);
+
+        // Manual event generation mode
+        template<typename T>
+        void GeneratePoint(const Integrand<T> &func, std::vector<T>& point) const;
+        template<typename T>
+        double GenerateWeight(const Integrand<T> &func,
+                              std::vector<T>& point) const;
+
+        // Manual Training mode
+        template<typename T>
+        void AddTrainData();
+        template<typename T>
+        void Optimize();
 
         // Getting results
         MultiChannelSummary Summary();
@@ -77,6 +91,26 @@ class MultiChannel {
         double min_diff{lim::infinity()};
         MultiChannelSummary summary;
 };
+
+template<typename T>
+void apes::MultiChannel::GeneratePoint(const Integrand<T> &func,
+                                       std::vector<T>& point) const {
+  // Generate single point without any of the surroundings
+  std::vector<double> rans(ndims);
+  Random::Instance().Generate(rans);
+  size_t ichannel = Random::Instance().SelectIndex(channel_weights);
+  func.GeneratePoint(ichannel, rans, point);
+}
+
+template<typename T>
+double apes::MultiChannel::GenerateWeight(const Integrand<T> &func,
+                      std::vector<T>& point) const {
+  // Compute weight for a given point
+  size_t nchannels = channel_weights.size();
+  std::vector<double> densities(nchannels);
+  return func.GenerateWeight(channel_weights, point, densities);
+}
+
 
 template<typename T>
 void apes::MultiChannel::operator()(Integrand<T> &func) {
@@ -110,7 +144,8 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         double val = wgt == 0 ? 0 : func(point)*wgt;
 
         double val2 = val * val;
-        func.AddTrainData(ichannel, val2);
+        if(params.should_optimize)
+          func.AddTrainData(ichannel, val2);
 
         if(std::isnan(val2)){
           std::cerr << "Encountered nan in integration" << std::endl;
@@ -118,7 +153,7 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
           std::cerr << "weight = " << wgt << std::endl;
         }
 
-        if(val2 != 0) {
+        if(val2 != 0 and params.should_optimize) {
             for(size_t j = 0; j < nchannels; ++j) {
                 train_data[j] += val2 * wgt / densities[j];
 		spdlog::debug("val2 = {}, wgt = {}, densities[{}] = {}, tain_data[{}] = {}",
@@ -135,9 +170,11 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 
         results += val;
     }
-    Adapt(train_data);
-    func.Train();
-    MaxDifference(train_data);
+    if(params.should_optimize){
+      Adapt(train_data);
+      func.Train();
+      MaxDifference(train_data);
+    }
     results.n_nonzero = params.ncalls;
     summary.results.push_back(results);
     summary.sum_results += results;
