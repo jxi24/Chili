@@ -10,7 +10,7 @@ std::vector<FourVector> JetCluster::operator()(const std::vector<FourVector> &pa
     if(parts.size() <= 1) return tmp;
 
     for(const auto &part : tmp) {
-        spdlog::info("Part = {}", part);
+        spdlog::trace("Part = {}", part);
     }
 
     size_t ii = 0, jj = 0, n = tmp.size();
@@ -26,7 +26,7 @@ std::vector<FourVector> JetCluster::operator()(const std::vector<FourVector> &pa
             jj = i;
         }
         for(size_t j = 0; j < i; ++j) {
-            spdlog::info("i = {}, j = {}, n = {}", i, j, n);
+            spdlog::trace("i = {}, j = {}, n = {}", i, j, n);
             double dij = kt2ij[i][j] = Q2ij(tmp[i], tmp[j]);
             if(dij < dmin) {
                 dmin = dij;
