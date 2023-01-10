@@ -51,13 +51,17 @@ class Integrand {
         void InitializeTrain() {
             for(auto &channel : channels) {
                 const auto grid = channel.integrator.Grid();
+                channel.train_data.clear();
                 channel.train_data.resize(grid.Dims()*grid.Bins());
             }
         }
-        void AddTrainData(size_t channel, const double val2) {
+        void AddTrainData(size_t channel, const double val2, const std::vector<double> &rans) {
             const auto grid = channels[channel].integrator.Grid();
-            for(size_t j = 0; j < grid.Dims(); ++j) 
-                channels[channel].train_data[j * grid.Bins() + grid.FindBin(j, channels[channel].rans[j])] += val2;
+            for(size_t j = 0; j < grid.Dims(); ++j) {
+                if(j * grid.Bins() + grid.FindBin(j, rans[j]) > channels[channel].train_data.size())
+                    spdlog::info("{}, {}, {}, {}", channels[channel].train_data.size(), j * grid.Bins() + grid.FindBin(j, rans[j]), rans[j], grid.FindBin(j, rans[j]));
+                channels[channel].train_data[j * grid.Bins() + grid.FindBin(j, rans[j])] += val2;
+            }
         }
         void Train() {
             for(auto &channel : channels) {
@@ -73,14 +77,15 @@ class Integrand {
             channels[channel].integrator.Grid()(rans);
             channels[channel].mapping -> GeneratePoint(point, rans);
         }
-        double GenerateWeight(const std::vector<double> &wgts, const std::vector<T> &point,
-                              std::vector<double> &densities) {
+
+        double GenerateWeight(const std::vector<double> &wgts, const std::vector<T> &point, size_t ichannel,
+                              std::vector<double> &densities, std::vector<double> &rans) const {
             double weight{};
-            std::vector<double> rans;
+            std::vector<double> _rans(point.size());
             for(size_t i = 0; i < NChannels(); ++i) {
-                densities[i] = channels[i].mapping -> GenerateWeight(point, rans);
-                channels[i].rans = rans;
-                double vw = channels[i].integrator.GenerateWeight(rans);
+                densities[i] = channels[i].mapping -> GenerateWeight(point, _rans);
+                if(i == ichannel) rans = _rans;
+                double vw = channels[i].integrator.GenerateWeight(_rans);
                 weight += wgts[i] / densities[i] / vw;
             }
             return 1.0 / weight;

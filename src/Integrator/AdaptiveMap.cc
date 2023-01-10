@@ -5,7 +5,6 @@
 
 #include "Integrator/AdaptiveMap.hh"
 #include "Integrator/Random.hh"
-#include "spdlog/spdlog.h"
 
 using apes::AdaptiveMap;
 
@@ -154,5 +153,5 @@ void AdaptiveMap::Split(apes::AdaptiveMapSplit split) {
 
     // Store the new histogram information
     m_bins = nsplit*m_bins;
-    m_hist = hist;
+    std::swap(m_hist, hist);
 }

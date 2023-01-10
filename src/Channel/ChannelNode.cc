@@ -70,7 +70,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                 unsigned int idx = (1u << iset) - 1;
                 while(idx < (1u << (nset - 1))) {
                     unsigned int subCur1 = 0;
-                    for(unsigned int i = 0; i < flavs.size(); ++i)
+                    for(unsigned int i = 0; i < set.size(); ++i)
                         subCur1 += set[i]*((idx >> i) & 1);
                     auto subCur2 = cur ^ subCur1;
                     // Skip over initial state legs

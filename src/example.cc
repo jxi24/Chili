@@ -23,26 +23,26 @@ std::vector<int> combine(int i, int j) {
 
 bool PreProcess(const std::vector<apes::FourVector> &mom) {
     if(std::isnan(mom[0][0])) {
-        spdlog::trace("Failed inital state");
+        spdlog::info("Failed inital state");
         return false;
     }
     if((mom[0]+mom[1]).Mass2() > 13000*13000) {
-        spdlog::trace("Failed s limit");
+        spdlog::info("Failed s limit");
         return false;
     }
     apes::JetCluster cluster(0.4);
     auto jets = cluster(mom);
-    if(jets.size() < mom.size()) return false;
+    if(jets.size() < mom.size()-2) return false;
     return true;
     for(size_t i = 2; i < mom.size(); ++i) {
         if(mom[i].Pt() < 30) return false;
         if(std::abs(mom[i].Rapidity()) > 5) {
-            spdlog::trace("Failed y cut for {}: y = {}", i, mom[i].Rapidity());
+            spdlog::info("Failed y cut for {}: y = {}", i, mom[i].Rapidity());
             return false;
         }
         for(size_t j = i+1; j < mom.size(); ++j) {
             if(mom[i].DeltaR(mom[j]) < 0.4) {
-                spdlog::trace("Failed R cut for {},{}: DR = {}", i, j, mom[i].DeltaR(mom[j]));
+                spdlog::info("Failed R cut for {},{}: DR = {}", i, j, mom[i].DeltaR(mom[j]));
                 return false;
             }
         }
@@ -75,7 +75,7 @@ int main() {
     model.Mass(-5) = 172;
     model.Width(-5) = 5;
 
-    spdlog::set_level(spdlog::level::trace);
+    spdlog::set_level(spdlog::level::info);
 
     std::vector<std::vector<int>> processes{
         {2, -2, 1, -1},
@@ -94,7 +94,7 @@ int main() {
     //                                            fmt::join(process.begin(), process.end(), ", ")));
     // }
 
-    auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 1);
+    auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 0);
 
     // Setup integrator
     apes::Integrand<apes::FourVector> integrand;
