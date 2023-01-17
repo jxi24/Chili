@@ -1,6 +1,8 @@
 #ifndef MAPPER_HH
 #define MAPPER_HH
 
+#include "Tools/Factory.hh"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,6 +19,7 @@ namespace apes {
 template<typename T>
 class Mapper {
     public:
+        using deserialize_func = std::function<std::unique_ptr<Mapper<T>>(std::istream&)>;
         template<typename C>
         using Mapper_ptr = std::unique_ptr<Mapper<C>>;
         template<typename C>
@@ -37,6 +40,21 @@ class Mapper {
         void SetMasses(std::vector<double> masses) { m_masses = std::move(masses); }
         const std::vector<double>& Masses() const { return m_masses; }
 
+        // Serialization
+        static std::string Name() { return "Mapper"; }
+        static bool Deserialize(std::istream &in, std::unique_ptr<Mapper<T>> &mapper) {
+            mapper = Factory<Mapper>::Deserialize(in);
+            return true;
+        }
+        static bool Serialize(std::ostream &out, const Mapper<T> &mapper) {
+            std::string name = mapper.GetName();
+            size_t size = name.size();
+            out.write(reinterpret_cast<char*>(&size), sizeof(size_t));
+            out.write(name.c_str(), size);
+            auto result = mapper._Serialize(out);
+            return result;
+        }
+
         // Printers
         static void Print(const char* func, const std::vector<T> &point, const std::vector<double> &rans) {
             spdlog::trace("{}", func);
@@ -51,8 +69,10 @@ class Mapper {
     private:
         std::string mapping_name{};
         std::vector<double> m_masses;
-};
 
+        virtual std::string GetName() const = 0;
+        virtual bool _Serialize(std::ostream &out) const = 0;
+};
 
 }
 

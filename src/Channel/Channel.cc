@@ -4,6 +4,21 @@
 using apes::FSMapper;
 using std::isnan;
 
+bool FSMapper::_Serialize(std::ostream &out) const {
+    m_channel.Serialize(out);
+    out.write(reinterpret_cast<const char*>(&m_sqrts), sizeof(m_sqrts));
+    out.write(reinterpret_cast<const char*>(&m_ptmax), sizeof(m_ptmax));
+    out.write(reinterpret_cast<const char*>(&m_ntot), sizeof(m_ntot));
+    out.write(reinterpret_cast<const char*>(&m_nout), sizeof(m_nout));
+    const size_t size = m_ptmin.size();
+    out.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    for(const auto &pt : m_ptmin) {
+        out.write(reinterpret_cast<const char*>(&pt), sizeof(pt));
+    }
+    // TODO: Serialize the cuts??
+    return true;
+}
+
 void FSMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
     mom.resize(m_ntot);
     iran = 0;

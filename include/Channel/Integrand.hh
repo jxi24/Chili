@@ -15,6 +15,20 @@ struct Channel {
     std::vector<double> rans;
 
     size_t NDims() const { return mapping -> NDims(); }
+    bool Serialize(std::ostream &out) const {
+        integrator.Grid().Serialize(out);
+        Mapper<T>::Serialize(out, *mapping.get());
+        return true;
+    }
+    bool Deserialize(std::istream &in) {
+        AdaptiveMap map;
+        map.Deserialize(in);
+        integrator = Vegas(map, {});
+        std::unique_ptr<Mapper<T>> mapper;
+        Mapper<T>::Deserialize(in, mapper);
+        mapping = std::move(mapper);
+        return true;
+    }
 };
 
 template<typename T>

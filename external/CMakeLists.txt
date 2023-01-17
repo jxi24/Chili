@@ -55,21 +55,21 @@ install(TARGETS yaml-cpp
 install(DIRECTORY ${YAML_CPP_SOURCE_DIR}/include/yaml-cpp
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-CPMFindPackage(
-    NAME libzippp
-    GIT_TAG "libzippp-v6.0-1.9.2"
-    GITHUB_REPOSITORY ctabin/libzippp
-    OPTIONS
-        "LIBZIPPP_INSTALL OFF"
-        "LIBZIPPP_INSTALL_HEADERS ON"
-        "LIBZIPPP_BUILD_TESTS OFF"
-)
-
-install(TARGETS libzippp
-  EXPORT libzippp
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(DIRECTORY ${LIBZIPPP_SOURCE_DIR}/include/libzippp
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+# CPMFindPackage(
+#     NAME libzippp
+#     GIT_TAG "libzippp-v6.0-1.9.2"
+#     GITHUB_REPOSITORY ctabin/libzippp
+#     OPTIONS
+#         "LIBZIPPP_INSTALL OFF"
+#         "LIBZIPPP_INSTALL_HEADERS ON"
+#         "LIBZIPPP_BUILD_TESTS OFF"
+# )
+# 
+# install(TARGETS libzippp
+#   EXPORT libzippp
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+# install(DIRECTORY ${LIBZIPPP_SOURCE_DIR}/include/libzippp
+#   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Install testing framework
 if(ENABLE_TESTING OR ENABLE_FUZZING)

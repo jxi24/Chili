@@ -9,20 +9,23 @@
 using apes::AdaptiveMap;
 
 bool AdaptiveMap::Deserialize(std::istream &in) {
-    in >> m_bins >> m_dims;
+    in.read(reinterpret_cast<char*>(&m_bins), sizeof(m_bins));
+    in.read(reinterpret_cast<char*>(&m_dims), sizeof(m_dims));
     m_hist.resize((m_bins + 1) * m_dims);
 
-    for(auto &x : m_hist) in >> x;
+    for(auto &bin : m_hist) {
+        in.read(reinterpret_cast<char*>(&bin), sizeof(bin));
+    }
 
     return true;
 }
 
 bool AdaptiveMap::Serialize(std::ostream &out) const {
-    out << m_bins << ' ' << m_dims;
+    out.write(reinterpret_cast<const char*>(&m_bins), sizeof(m_bins));
+    out.write(reinterpret_cast<const char*>(&m_dims), sizeof(m_dims));
 
     for(const auto &x : m_hist) {
-        out << ' ' << std::scientific
-            << std::setprecision(std::numeric_limits<double>::max_digits10 - 1) << x;
+        out.write(reinterpret_cast<const char*>(&x), sizeof(x));
     }
 
     return true;

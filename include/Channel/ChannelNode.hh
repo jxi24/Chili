@@ -27,6 +27,8 @@ struct ParticleInfo {
     unsigned int idx{};
     int pid{};
     double mass{}, width{};
+    bool Deserialize(std::istream &in);
+    bool Serialize(std::ostream &out) const;
 };
 using Current = std::unordered_map<unsigned int, std::set<ParticleInfo>>;
 using DecayProds = std::pair<ParticleInfo, ParticleInfo>;
@@ -44,6 +46,8 @@ struct DataFrame {
 struct ChannelDescription {
     std::vector<ParticleInfo> info;
     DecayMap decays{};
+    bool Deserialize(std::istream &in);
+    bool Serialize(std::ostream &out) const;
 };
 using ChannelVec = std::vector<ChannelDescription>;
 

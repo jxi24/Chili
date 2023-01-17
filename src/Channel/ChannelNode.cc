@@ -16,6 +16,56 @@ std::string WriteCurrent(size_t cur) {
     return ss.str();
 }
 
+bool apes::ParticleInfo::Serialize(std::ostream &out) const {
+    out.write(reinterpret_cast<const char*>(&idx), sizeof(idx));
+    out.write(reinterpret_cast<const char*>(&pid), sizeof(pid));
+    out.write(reinterpret_cast<const char*>(&mass), sizeof(mass));
+    out.write(reinterpret_cast<const char*>(&width), sizeof(width));
+    return true;
+}
+
+bool apes::ParticleInfo::Deserialize(std::istream &in) {
+    in.read(reinterpret_cast<char*>(&idx), sizeof(idx));
+    in.read(reinterpret_cast<char*>(&pid), sizeof(pid));
+    in.read(reinterpret_cast<char*>(&mass), sizeof(mass));
+    in.read(reinterpret_cast<char*>(&width), sizeof(width));
+    return true;
+}
+
+bool apes::ChannelDescription::Serialize(std::ostream &out) const {
+    const size_t size = info.size();
+    out.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    for(const auto &particle : info) {
+        particle.Serialize(out);
+    }
+    const size_t size2 = decays.size();
+    out.write(reinterpret_cast<const char*>(&size2), sizeof(size_t));
+    for(const auto &decay : decays) {
+        decay.first.Serialize(out);
+        decay.second.first.Serialize(out);
+        decay.second.second.Serialize(out);
+    }
+    return true;
+}
+
+bool apes::ChannelDescription::Deserialize(std::istream &in) {
+    size_t size;
+    in.read(reinterpret_cast<char*>(&size), sizeof(size_t));
+    info.resize(size);
+    for(auto &particle : info) {
+        particle.Deserialize(in);
+    }
+    in.read(reinterpret_cast<char*>(&size), sizeof(size_t));
+    ParticleInfo p12, p1, p2;
+    for(size_t i = 0; i < size; ++i) {
+        p12.Deserialize(in);
+        p1.Deserialize(in);
+        p2.Deserialize(in);
+        decays[p12] = {p1, p2};
+    }
+    return true;
+}
+
 std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax) {
     Cuts cuts;
     // TODO: Make this nicer with alias to jet particle

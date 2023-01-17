@@ -57,7 +57,7 @@ class AdaptiveMap {
         size_t Bins() const { return m_bins; }
         size_t Dims() const { return m_dims; }
         // Used for testing purposes
-        std::vector<double> Hist() const { return m_hist; }
+        const std::vector<double>& Hist() const { return m_hist; }
         std::vector<double>& Hist() { return m_hist; }
 
         // Generate random numbers
@@ -67,7 +67,6 @@ class AdaptiveMap {
         // Update histograms
         void Adapt(const double&, const std::vector<double>&);
         void Split(AdaptiveMapSplit split = AdaptiveMapSplit::half);
-            
 
     private:
         std::vector<double> m_hist;

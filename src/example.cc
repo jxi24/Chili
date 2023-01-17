@@ -1,6 +1,7 @@
 #include "Channel/ChannelNode.hh"
 #include "Channel/Integrand.hh"
 #include "Channel/MultiChannel.hh"
+#include "Integrator/AdaptiveMap.hh"
 #include "Model/Model.hh"
 #include "Channel/Channel.hh"
 #include "Tools/JetCluster.hh"
@@ -125,7 +126,27 @@ int main() {
     spdlog::info("Starting optimization");
     integrator.Optimize(integrand);
     integrator.Summary();
-    integrator(integrand); // Generate events
+
+    spdlog::info("Saving trained integrator");
+    size_t idx = 0;
+    for(const auto &channel : integrand.Channels()) {
+        std::string filename = fmt::format("channel_{}.bin", idx++);
+        std::ofstream output;
+        output.open(filename, std::ios::binary | std::ios::out);
+        channel.Serialize(output);
+        output.close();
+    }
+
+    spdlog::info("Finished saving");
+
+    apes::Channel<apes::FourVector> channel;
+    std::string filename = "channel_0.bin";
+    std::ifstream output;
+    output.open(filename, std::ios::binary | std::ios::in);
+    channel.Deserialize(output);
+    output.close();
+
+    // integrator(integrand); // Generate events
 
     return 0;
 }
