@@ -69,18 +69,25 @@ double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
     for(const auto &decay : m_channel.decays) {
         const auto part1 = decay.second.first;
         const auto part2 = decay.second.second;
-        double smin1 = pow(mom.at(part1.idx).Mass()
-                          + mom.at(part2.idx).Mass(), 2);
-        if(std::isnan(smin1)) smin1 = 0;
+        double smin1 = pow(sqrt(std::abs(mom.at(part1.idx).Mass2()))
+                           + sqrt(std::abs(mom.at(part2.idx).Mass2())), 2);
+        //std::cout << "WgtDecays " << part1.idx << " " << part2.idx << " "<<smin1 << std::endl;
+
+        //if(std::isnan(smin1)) smin1 = 0;
         double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
         double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
         double smin = std::max(std::max(smin1, smin2), m_cuts.smin[part1.idx|part2.idx]);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
+        //std::cout << "smin1 = " << smin1 << ", smin2 = " << smin2 << std::endl;
+        //std::cout << "smax = "<< smax << " " << m_sqrts*m_sqrts << " " << smax / m_sqrts/m_sqrts << std::endl;
+        //smax = m_sqrts;
         if(std::abs(decay.first.mass) < 1e-16) {
-	    wgt *= MasslessPropWeight(0.99,smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
+            wgt *= MasslessPropWeight(0.99,smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
+            // wgt *= MassivePropWeight(10., 2.,
+            //                          smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
         } else {
             wgt *= MassivePropWeight(decay.first.mass, decay.first.width,
-                                     smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
+                                     smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
         }
         wgt /= (2*M_PI);
     }
