@@ -34,6 +34,7 @@ include(CMake/StaticAnalyzers.cmake)
 
 option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" ON)
 option(ENABLE_TESTING "Enable Test Builds" OFF)
+option(ENABLE_MPI "Enable MPI builds" OFF)
 
 # Very basic PCH example
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
@@ -42,6 +43,21 @@ if(ENABLE_PCH)
     # which is a good idea if any #define's change
     # These should be headers included in many places
     target_precompile_headers(project_options INTERFACE <vector> <string> <map>)
+endif()
+
+if(ENABLE_MPI)
+    find_package(MPI REQUIRED)
+
+    if(NOT TARGET MPI::MPI_CXX)
+        add_library(MPI::MPI_CXX IMPORTED INTERFACE)
+
+        set_property(TARGET MPI::MPI_CXX
+                     PROPERTY INTERFACE_COMPILE_OPTIONS ${MPI_CXX_COMPILE_FLAGS})
+        set_property(TARGET MPI::MPI_CXX
+                     PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${MPI_CXX_INCLUDE_PATH}")
+        set_property(TARGET MPI::MPI_CXX
+                     PROPERTY INTERFACE_LINK_LIBRARIES ${MPI_CXX_LINK_FLAGS} ${MPI_CXX_LIBRARIES})
+    endif() 
 endif()
 
 # Add dependencies

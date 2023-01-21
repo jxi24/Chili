@@ -25,7 +25,7 @@ class Factory {
             in.read(data, size);
             data[size] = '\0';
             std::string name = data;
-            delete data;
+            delete[] data;
 
             auto deserialize = Registry().at(name);
             return deserialize(in);

@@ -27,3 +27,7 @@ set_target_properties(Tools Integrator Channel apes spdlog fmt yaml-cpp PROPERTI
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
+
+add_executable(example3 example_mpi.cc)
+target_link_libraries(example3 PRIVATE project_options project_warnings
+                      PUBLIC MPI::MPI_CXX Tools yaml-cpp Channel Integrator)

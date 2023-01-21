@@ -6,9 +6,11 @@
 #include <utility>
 
 #include "Integrator/Vegas.hh"
+#include "Tools/MPI.hh"
 
 #include "fmt/format.h"
 #include "spdlog/spdlog.h"
+
 
 using apes::Vegas;
 using apes::VegasSummary;
@@ -19,7 +21,13 @@ void Vegas::operator()(const Func<double> &func) {
 
     StatsData results;
 
-    for(size_t i = 0; i < params.ncalls; ++i) {
+#ifdef ENABLE_MPI
+    size_t ncalls = params.ncalls/MPIHandler::Instance().Size();
+#else
+    size_t ncalls = params.ncalls;
+#endif
+
+    for(size_t i = 0; i < ncalls; ++i) {
         Random::Instance().Generate(rans);
 
         double wgt = grid(rans);
@@ -32,6 +40,13 @@ void Vegas::operator()(const Func<double> &func) {
             train_data[j * grid.Bins() + grid.FindBin(j, rans[j])] += val2; 
         }
     }
+
+#ifdef ENABLE_MPI
+    MPIHandler::Instance().ReduceAll(train_data.data(), train_data.size(), MPI_DOUBLE, MPI_SUM);
+    MPIHandler::Instance().ReduceAll(&results, 1,
+                                     MPIHandler::Instance().Type<StatsData>(),
+                                     MPIHandler::Instance().Op<StatsAdd>());
+#endif
 
     grid.Adapt(params.alpha, train_data);
     summary.results.push_back(results);

@@ -1,6 +1,7 @@
 #ifndef STATISTICS_HH
 #define STATISTICS_HH
 
+#include "fmt/core.h"
 #include <algorithm>
 #include <limits>
 #include <vector>
@@ -117,10 +118,8 @@ class StatsData {
         bool operator!=(const StatsData &other) const { return !(*this == other); }
 
         friend YAML::convert<apes::StatsData>;
-
-  size_t n_nonzero;
-private:
-  double n{}, min{lim::max()}, max{lim::min()}, sum{}, sum2{}, n_finite{};
+    private:
+        double n{}, min{lim::max()}, max{lim::min()}, sum{}, sum2{}, n_finite{};
 };
 
 }
