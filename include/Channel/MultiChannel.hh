@@ -72,7 +72,8 @@ class MultiChannel {
                           std::vector<double> &train_data, const std::vector<double> &rans,
                           const std::vector<double> &densities);
         template<typename T>
-        void Train(Integrand<T> &func, const std::vector<double> &train_data);
+        void Train(Integrand<T> &func, std::vector<double> &train_data);
+        void UpdateResults(StatsData&);
 
         // Getting results
         MultiChannelSummary Summary();
@@ -145,7 +146,14 @@ void apes::MultiChannel::AddTrainData(Integrand<T> &func, size_t ichannel, doubl
 }
 
 template<typename T>
-void apes::MultiChannel::Train(Integrand<T> &func, const std::vector<double> &train_data) {
+void apes::MultiChannel::Train(Integrand<T> &func, std::vector<double> &train_data) {
+#ifdef ENABLE_MPI
+    // Combine mpi results
+    auto &mpi = MPIHandler::Instance();
+    mpi.AllReduce<std::vector<double>, Add>(train_data);
+    for(auto &channel : func.Channels())
+        mpi.AllReduce<std::vector<double>, Add>(channel.train_data);
+#endif
       Adapt(train_data);
       func.Train();
       MaxDifference(train_data);
@@ -201,17 +209,8 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 
         results += val;
     }
-#ifdef ENABLE_MPI
-    // Combine mpi results
-    mpi.AllReduce<StatsData, StatsAdd>(results);
-    mpi.AllReduce<std::vector<double>, Add>(train_data);
-    for(auto &channel : func.Channels())
-        mpi.AllReduce<std::vector<double>, Add>(channel.train_data);
-#endif
     if(params.should_optimize) Train(func, train_data);
-
-    summary.results.push_back(results);
-    summary.sum_results += results;
+    UpdateResults(results);
 }
 
 template<typename T>

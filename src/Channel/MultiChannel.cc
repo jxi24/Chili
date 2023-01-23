@@ -8,6 +8,16 @@ apes::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelPara
     }
 }
 
+void apes::MultiChannel::UpdateResults(StatsData &results) {
+#ifdef ENABLE_MPI
+    // Combine mpi results
+    auto &mpi = MPIHandler::Instance();
+    mpi.AllReduce<StatsData, StatsAdd>(results);
+#endif
+    summary.results.push_back(results);
+    summary.sum_results += results;
+}
+
 void apes::MultiChannel::Adapt(const std::vector<double> &train) {
     std::vector<double> new_weights(channel_weights.size());
 
