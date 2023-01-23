@@ -6,6 +6,10 @@
 #include <optional>
 #include <functional>
 
+#ifdef ENABLE_MPI
+#include "Tools/MPI.hh"
+#endif
+
 namespace apes {
 
 struct MultiChannelSummary {
@@ -158,7 +162,14 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
     StatsData results;
     func.InitializeTrain();
 
-    for(size_t i = 0; i < params.ncalls; ++i) {
+#ifdef ENABLE_MPI
+    auto &mpi = MPIHandler::Instance();
+    size_t ncalls = params.ncalls/mpi.Size();
+#else
+    size_t ncalls = params.ncalls;
+#endif
+
+    for(size_t i = 0; i < ncalls; ++i) {
         // Generate random point and returns the used channel
         size_t ichannel = GeneratePoint(func, point);
 
@@ -190,9 +201,15 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 
         results += val;
     }
+#ifdef ENABLE_MPI
+    // Combine mpi results
+    mpi.AllReduce<StatsData, StatsAdd>(results);
+    mpi.AllReduce<std::vector<double>, Add>(train_data);
+    for(auto &channel : func.Channels())
+        mpi.AllReduce<std::vector<double>, Add>(channel.train_data);
+#endif
     if(params.should_optimize) Train(func, train_data);
 
-    results.n_nonzero = params.ncalls;
     summary.results.push_back(results);
     summary.sum_results += results;
 }
@@ -206,6 +223,9 @@ void apes::MultiChannel::Optimize(Integrand<T> &func) {
         StatsData current = summary.sum_results;
         rel_err = current.Error() / std::abs(current.Mean());
 
+#ifdef ENABLE_MPI
+        if(MPIHandler::Instance().Rank() == 0)
+#endif
         PrintIteration();
         if(++params.iteration == params.nrefine) RefineChannels(func);
     }
