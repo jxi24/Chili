@@ -89,7 +89,9 @@ double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
         //std::cout << "WgtDecays " << part1.idx << " " << part2.idx << " "<<smin1 << std::endl;
 
         //if(std::isnan(smin1)) smin1 = 0;
-        double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
+        double deltaR = m_cuts.deltaR.find({part1.pid, part2.pid}) == m_cuts.deltaR.end() 
+            ? 0 : m_cuts.deltaR.at({part1.pid, part2.pid});
+        // double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
         double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
         double smin = std::max(std::max(smin1, smin2), m_cuts.smin[part1.idx|part2.idx]);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
