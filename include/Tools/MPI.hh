@@ -45,16 +45,17 @@ struct is_container<T, std::void_t<decltype(std::declval<T>().data()),
 //     }
 // };
 // 
-// #define MPI_BUILTIN_TYPE(type, mpi_type)                \
-//     template<>                                          \
-//     struct datatype_traits<type> {                      \
-//         static MPI_Datatype type() { return mpi_type; } \
-//     }
-// 
-// MPI_BUILTIN_TYPE(double, MPI_DOUBLE);
-// 
-// #undef MPI_BUILTIN_TYPE
-// #endif
+/*
+#define MPI_BUILTIN_TYPE(type, mpi_type)	  \
+template<> struct datatype_traits<type> {	  \
+  static MPI_Datatype type() { return mpi_type; } \
+}
+
+MPI_BUILTIN_TYPE(double, MPI_DOUBLE);
+
+#undef MPI_BUILTIN_TYPE
+#endif
+*/
 
 #ifdef ENABLE_MPI
 struct Add {
