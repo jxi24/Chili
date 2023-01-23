@@ -192,7 +192,6 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
     }
     if(params.should_optimize) Train(func, train_data);
 
-    results.n_nonzero = params.ncalls;
     summary.results.push_back(results);
     summary.sum_results += results;
 }
