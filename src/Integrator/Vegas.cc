@@ -42,10 +42,8 @@ void Vegas::operator()(const Func<double> &func) {
     }
 
 #ifdef ENABLE_MPI
-    MPIHandler::Instance().ReduceAll(train_data.data(), train_data.size(), MPI_DOUBLE, MPI_SUM);
-    MPIHandler::Instance().ReduceAll(&results, 1,
-                                     MPIHandler::Instance().Type<StatsData>(),
-                                     MPIHandler::Instance().Op<StatsAdd>());
+    MPIHandler::Instance().AllReduce(train_data.data(),static_cast<int>(train_data.size()), MPI_DOUBLE, MPI_SUM);
+    MPIHandler::Instance().AllReduce(&results, 6, MPI_DOUBLE, MPI_SUM);
 #endif
 
     grid.Adapt(params.alpha, train_data);

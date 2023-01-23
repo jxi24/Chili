@@ -136,6 +136,10 @@ class MPIHandler {
                        root, mComm);
         }
 
+        void AllReduce(void* sendbuf, int sendcount, MPI_Datatype sendtype, MPI_Op op) {
+	  MPI_Allreduce(MPI_IN_PLACE, sendbuf, sendcount, sendtype, op, mComm);
+        }
+
         template<typename T, typename Op>
         void AllReduce(T &buffer) {
             auto op = Operator<Op>();
