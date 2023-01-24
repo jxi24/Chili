@@ -55,7 +55,7 @@ class MultiChannel {
         template<typename T>
         void operator()(Integrand<T>&);
         template<typename T>
-        void Optimize(Integrand<T>&);
+        void Optimize(Integrand<T>&,std::ostream & =std::cout);
 
         // Manual event generation mode
         template<typename T>
@@ -94,7 +94,7 @@ class MultiChannel {
                     channel.integrator.Refine();
             }
         }
-        void PrintIteration() const;
+        void PrintIteration(std::ostream &str) const;
         void MaxDifference(const std::vector<double>&);
 
         size_t ndims{};
@@ -214,7 +214,7 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 }
 
 template<typename T>
-void apes::MultiChannel::Optimize(Integrand<T> &func) {
+void apes::MultiChannel::Optimize(Integrand<T> &func,std::ostream &ostr) {
     double rel_err = lim::max();
 
     while((rel_err > params.rtol) && summary.results.size() < params.niterations) {
@@ -225,7 +225,7 @@ void apes::MultiChannel::Optimize(Integrand<T> &func) {
 #ifdef ENABLE_MPI
         if(MPIHandler::Instance().Rank() == 0)
 #endif
-        PrintIteration();
+        PrintIteration(ostr);
         if(++params.iteration == params.nrefine) RefineChannels(func);
     }
 }
