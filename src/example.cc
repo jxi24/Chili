@@ -125,7 +125,7 @@ int main() {
     integrand.PostProcess() = PostProcess;
     spdlog::info("Starting optimization");
     integrator.Optimize(integrand);
-    integrator.Summary();
+    integrator.Summary(std::cout);
 
     spdlog::info("Saving trained integrator");
     size_t idx = 0;

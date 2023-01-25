@@ -65,16 +65,16 @@ void apes::MultiChannel::MaxDifference(const std::vector<double> &train) {
     }
 }
 
-apes::MultiChannelSummary apes::MultiChannel::Summary() {
+apes::MultiChannelSummary apes::MultiChannel::Summary(std::ostream &str) {
     summary.best_weights = best_weights;
-    std::cout << "Final integral = "
+    str << "Final integral = "
               << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)",
                              summary.Result().Mean(), summary.Result().Error(),
                              summary.Result().Error() / summary.Result().Mean()*100) << std::endl;
-    std::cout << fmt::format("Cut Efficiency: {}", summary.Result().Efficiency()) << std::endl;
-    std::cout << "Channel weights:\n";
+    str << fmt::format("Cut Efficiency: {}", summary.Result().Efficiency()) << std::endl;
+    str << "Channel weights:\n";
     for(size_t i = 0; i < best_weights.size(); ++i) {
-        std::cout << "  alpha(" << i << ") = " << best_weights[i] << "\n";
+        str << "  alpha(" << i << ") = " << best_weights[i] << "\n";
     }
     return summary;
 }

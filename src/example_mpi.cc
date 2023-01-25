@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
     }
     integrator.Optimize(integrand);
     if(mpi.Rank() == 0) {
-        integrator.Summary();
+      integrator.Summary(std::cout);
     }
 
     if(mpi.Rank() == 0) {

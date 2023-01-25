@@ -76,7 +76,7 @@ class MultiChannel {
         void UpdateResults(StatsData&);
 
         // Getting results
-        MultiChannelSummary Summary();
+        MultiChannelSummary Summary(std::ostream &str);
 
         // YAML interface
         friend YAML::convert<apes::MultiChannel>;
