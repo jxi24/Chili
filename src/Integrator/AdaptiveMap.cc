@@ -32,9 +32,9 @@ bool AdaptiveMap::Serialize(std::ostream &out) const {
 }
 
 size_t AdaptiveMap::FindBin(size_t dim, double x) const {
-    const auto edges = Edges(dim);
-    auto it = std::lower_bound(edges.begin(), edges.end(), x);
-    return static_cast<size_t>(std::distance(edges.begin(), it))-1;
+    auto edges = Edges(dim);
+    auto it = std::lower_bound(edges, edges + static_cast<int>(m_bins), x);
+    return static_cast<size_t>(std::distance(edges, it))-1;
 }
 
 double AdaptiveMap::operator()(std::vector<double> &rans) {

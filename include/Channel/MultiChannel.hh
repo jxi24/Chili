@@ -307,32 +307,6 @@ struct convert<apes::MultiChannelParams> {
     }
 };
 
-template<>
-struct convert<apes::MultiChannel> {
-    static Node encode(const apes::MultiChannel &rhs) {
-        Node node;
-        node["NDims"] = rhs.ndims;
-        node["NChannels"] = rhs.best_weights.size();
-        node["Parameters"] = rhs.params;
-        node["Summary"] = rhs.summary;
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::MultiChannel &rhs) {
-        if(node.size() != 4) return false; 
-
-        rhs.ndims = node["NDims"].as<size_t>();
-        rhs.summary = node["Summary"].as<apes::MultiChannelSummary>();
-        rhs.params = node["Parameters"].as<apes::MultiChannelParams>();
-
-        auto nchannels = node["NChannels"].as<size_t>();
-        if(rhs.summary.best_weights.size() != nchannels) return false; 
-        rhs.channel_weights = rhs.summary.best_weights;
-        rhs.best_weights = rhs.summary.best_weights;
-        return true;
-    }
-};
-
 }
 
 #endif

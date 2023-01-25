@@ -126,24 +126,6 @@ struct convert<apes::VegasSummary> {
     }
 };
 
-template<>
-struct convert<apes::Vegas> {
-    static Node encode(const apes::Vegas &rhs) {
-        Node node;
-        node["Grid"] = rhs.grid;
-        node["Summary"] = rhs.summary;
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::Vegas &rhs) {
-        if(node.size() != 2) return false;
-
-        rhs.grid = node["Grid"].as<apes::AdaptiveMap>();
-        rhs.summary = node["Summary"].as<apes::VegasSummary>();
-        return true;
-    }
-};
-
 }
 
 #endif

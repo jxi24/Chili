@@ -50,9 +50,8 @@ class AdaptiveMap {
         size_t FindBin(size_t, double) const;
 
         // Map information
-        std::vector<double> Edges(size_t dim) const { 
-            return std::vector<double>(m_hist.begin() + static_cast<int>(dim*(m_bins+1)),
-                                       m_hist.begin() + static_cast<int>((dim+1)*(m_bins+1)));
+        std::vector<double>::const_iterator Edges(size_t dim) const { 
+            return m_hist.cbegin() + static_cast<int>(dim*(m_bins+1));
         }
         size_t Bins() const { return m_bins; }
         size_t Dims() const { return m_dims; }
@@ -71,50 +70,6 @@ class AdaptiveMap {
     private:
         std::vector<double> m_hist;
         size_t m_dims{}, m_bins{};
-};
-
-}
-
-namespace YAML {
-
-template<>
-struct convert<apes::AdaptiveMap> {
-    static Node encode(const apes::AdaptiveMap &rhs) {
-        Node node;
-        node["ndims"] = rhs.Dims();
-        node["nbins"] = rhs.Bins();
-        for(size_t i = 0; i < rhs.Dims(); ++i) {
-            node["hists"].push_back(rhs.Edges(i));
-            node["hists"][i].SetStyle(YAML::EmitterStyle::Flow);
-        }
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::AdaptiveMap &rhs) {
-        // Ensure node has entries for ndims, nbins, and edges
-        if(node.size() != 3) return false;
-
-        // Load dimensions and bins and initialize map
-        auto ndims = node["ndims"].as<size_t>();
-        auto nbins = node["nbins"].as<size_t>();
-        rhs = apes::AdaptiveMap(ndims, nbins);
-        std::vector<double> hist(ndims*(nbins+1));
-
-        // Ensure that the number of histograms matches the number of dims 
-        if(node["hists"].size() != ndims) return false;
-        for(size_t i = 0; i < ndims; ++i) {
-            // Check that the histogram has the correct number of bins
-            if(node["hists"][i].size() != nbins+1) return false; 
-            for(size_t j = 0; j <= nbins; ++j) {
-                hist[i*(nbins+1) + j] = node["hists"][i][j].as<double>();
-            }
-        }
-
-        // Load histogram into map
-        rhs.Hist() = hist;
-        
-        return true;
-    }
 };
 
 }
