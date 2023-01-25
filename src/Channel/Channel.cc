@@ -33,8 +33,10 @@ void FSMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<dou
     for(size_t i = 0; i < mom.size(); ++i) {
         mom[i] = tmp_mom[1 << i];
     }
+#ifdef MAPPER_TRACE
     spdlog::trace("Channel = {}", ToString(m_channel));
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+#endif
 }
 
 double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) {
@@ -53,9 +55,11 @@ double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<
     double wgttchan = WgtTChan(tmp_mom, rans);
     double wgtschan = WgtSChan(tmp_mom, rans);
     wgt = wgtdecay*wgttchan*wgtschan;
+#ifdef MAPPER_TRACE
     spdlog::trace("Channel = {}", ToString(m_channel));
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  Weight = {}", wgt);
+#endif
     return wgt;
 }
 
