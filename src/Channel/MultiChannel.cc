@@ -87,7 +87,7 @@ void apes::MultiChannel::PrintIteration(std::ostream &str) const {
   str << fmt::format("XS: {:3d}   {:^8.5e} +/- {:^8.5e} ({:^2.3f}%)   Points: {:3d}/{:3d} ({:^2.2f}%)   Total: {:3d}/{:3d}   Time: {:02d}:{:02d}:{:02d}",
             summary.results.size(),
                            summary.Result().Mean(), summary.Result().Error(),summary.Result().Error()/summary.Result().Mean()*100,
-                           finitecalls,summary.results.back().Calls(),finitecalls/calls*100,
+                           summary.results.back().FiniteCalls(),summary.results.back().Calls(),finitecalls/calls*100,
                            summary.Result().FiniteCalls(), summary.Result().Calls(),
-                           now->tm_hour,now->tm_min,now->tm_sec) << std::endl;
+                           static_cast<int>(now->tm_hour),now->tm_min,now->tm_sec) << std::endl;
 }
