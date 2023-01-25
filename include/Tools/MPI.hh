@@ -145,7 +145,8 @@ class MPIHandler {
             auto op = Operator<Op>();
             if constexpr(detail::is_container<T>()) {
                 auto type = Type<typename T::value_type>();
-                MPI_Allreduce(MPI_IN_PLACE, buffer.data(), buffer.size(), type, op, mComm);
+                MPI_Allreduce(MPI_IN_PLACE, buffer.data(),
+			      static_cast<int>(buffer.size()), type, op, mComm);
             } else {
                 auto type = Type<T>();
                 MPI_Allreduce(MPI_IN_PLACE, &buffer, 1, type, op, mComm);

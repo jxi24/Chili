@@ -136,23 +136,6 @@ struct convert<apes::Channel<T>> {
     }
 };
 
-// Dummy YAML encoding / decoding for testing basics
-template<>
-struct convert<apes::Channel<double>> {
-    static Node encode(const apes::Channel<double> &rhs) {
-        Node node;
-        node["Integrator"] = rhs.integrator;
-        // node["Mapper"] = rhs.mapping -> ToYAML();
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::Channel<double> &rhs) {
-        if(node.size() != 2) return false;
-        rhs.integrator = node["Integrator"].as<apes::Vegas>();
-        return true;
-    }
-};
-
 template<typename T>
 struct convert<apes::Integrand<T>> {
     static Node encode(const apes::Integrand<T> &rhs) {
