@@ -89,5 +89,5 @@ void apes::MultiChannel::PrintIteration(std::ostream &str) const {
                            summary.Result().Mean(), summary.Result().Error(),summary.Result().Error()/summary.Result().Mean()*100,
                            summary.results.back().FiniteCalls(),summary.results.back().Calls(),finitecalls/calls*100,
                            summary.Result().FiniteCalls(), summary.Result().Calls(),
-                           static_cast<int>(now->tm_hour),now->tm_min,now->tm_sec) << std::endl;
+                           now->tm_hour,now->tm_min,now->tm_sec) << std::endl;
 }
