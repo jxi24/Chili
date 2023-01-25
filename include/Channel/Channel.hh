@@ -68,6 +68,7 @@ class FSMapper : public Mapper<FourVector>, Registrable<Mapper<FourVector>, FSMa
         Cuts m_cuts;
         size_t iran{};
         std::vector<double> m_ptmin;
+        SparseMom tmp_mom;
 
         // Serialization
         std::string GetName() const override { return FSMapper::Name(); }

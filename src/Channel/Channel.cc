@@ -43,7 +43,6 @@ double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<
     rans.resize(NDims());
     iran = 0;
     double wgt = 1.0;
-    SparseMom tmp_mom;
     for(size_t i = 0; i < mom.size(); ++i) {
         tmp_mom[1 << i] = mom[i];
     }
