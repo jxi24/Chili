@@ -293,7 +293,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
 bool apes::operator<(const ParticleInfo &a, const ParticleInfo &b) {
     if(a.idx == b.idx) {
         if(a.mass == b.mass) {
-            return a.pid < b.pid;
+            return a.width < b.width;
         }
         return a.mass < b.mass;
     }
@@ -301,7 +301,7 @@ bool apes::operator<(const ParticleInfo &a, const ParticleInfo &b) {
 }
 
 bool apes::operator==(const ParticleInfo &a, const ParticleInfo &b) {
-    return a.mass == b.mass && a.idx == b.idx && a.pid == b.pid;
+    return a.mass == b.mass && a.idx == b.idx && a.width == b.width;
 }
 
 bool apes::operator<(const ChannelDescription &a, const ChannelDescription &b) {
