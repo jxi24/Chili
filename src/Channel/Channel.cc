@@ -23,11 +23,11 @@ void FSMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<dou
     mom.resize(m_ntot);
     iran = 0;
     for(size_t i = 0; i < m_nout; ++i) {
-        masses2[1 << (i + 2)] = m_cuts.sexternal[i];
+        tmp_masses[1 << (i + 2)] = m_cuts.sexternal[i];
     }
-    GenDecays(masses2, rans);
-    GenTChan(tmp_mom, rans, masses2);
-    GenSChan(tmp_mom, rans, masses2);
+    GenDecays(tmp_masses, rans);
+    GenTChan(tmp_mom, rans, tmp_masses);
+    GenSChan(tmp_mom, rans, tmp_masses);
     for(size_t i = 0; i < mom.size(); ++i) {
         mom[i] = tmp_mom[1 << i];
     }
