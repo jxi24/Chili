@@ -196,7 +196,9 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         if(std::isnan(val)){
           std::cerr << "Encountered nan in integration: "
 		    << "f = " << f << ", w = " << wgt << std::endl;
-	  val = 0;
+	  val = wgt = 0;
+	  i--;
+	  if (std::isnan(wgt)) continue;
         }
 
         if(params.should_optimize) AddTrainData(func, ichannel, val, wgt, train_data, rans, densities);
