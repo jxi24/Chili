@@ -33,7 +33,7 @@ struct VegasParams {
     size_t ninterations{nitn_default};
 
     static constexpr size_t nitn_default = 10, ncalls_default = 10000, nrefine_default = 5;
-    static constexpr double alpha_default = 1.5, rtol_default = 1e-4, atol_default = 1e-4;
+    static constexpr double alpha_default = 1., rtol_default = 1e-4, atol_default = 1e-4;
     static constexpr size_t nparams = 6;
 };
 
