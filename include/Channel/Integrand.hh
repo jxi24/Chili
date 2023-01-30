@@ -117,48 +117,4 @@ class Integrand {
 
 }
 
-namespace YAML {
-
-template<typename T>
-struct convert<apes::Channel<T>> {
-    static Node encode(const apes::Channel<T> &rhs) {
-        Node node;
-        node["Integrator"] = rhs.integrator;
-        // node["Mapper"] = rhs.mapping -> ToYAML();
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::Channel<T> &rhs) {
-        if(node.size() != 2) return false;
-        rhs.integrator = node["Integrator"].as<apes::Vegas>();
-        // TODO: Figure out how to load a saved integrator
-        return true;
-    }
-};
-
-template<typename T>
-struct convert<apes::Integrand<T>> {
-    static Node encode(const apes::Integrand<T> &rhs) {
-        Node node;
-        node["NChannels"] = rhs.channels.size();
-        for(const auto & channel : rhs.channels) {
-            node["Channels"].push_back(channel);
-        }
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::Integrand<T> &rhs) {
-        if(node.size() != 2) return false;
-
-        auto nchannels = node["NChannels"].as<size_t>();
-        if(node["Channels"].size() != nchannels) return false;
-        for(const auto & channel : node["Channels"])
-            rhs.channels.push_back(channel.as<apes::Channel<T>>());
-
-        return true;
-    }
-};
-
-}
-
 #endif

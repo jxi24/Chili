@@ -12,10 +12,18 @@ namespace apes {
 #ifdef ENABLE_MPI
 
 template<typename T>
+struct datatype_traits;
+
+template<typename T>
 struct type_builder {
-    
+    constexpr type_builder() {}
+    template<typename C, size_t size>
+    constexpr void add_continuous() {
+        MPI_Type_contiguous(size, datatype_traits<C>::type(), &type);
+    }
+    constexpr MPI_Datatype build() { MPI_Type_commit(&type); return type; }
+    MPI_Datatype type;
 };
-#endif
 
 namespace detail {
 
@@ -26,38 +34,80 @@ template<typename T>
 struct is_container<T, std::void_t<decltype(std::declval<T>().data()),
                                    decltype(std::declval<T>().size())>> : std::true_type {};
 
-// #ifdef ENABLE_MPI
-// template<typename T, typename Enable = void>
-// struct datatype_traits_impl {
-//     static MPI_Datatype type() {
-//         static type_builder<T> builder;
-//         return builder.type_;
-//     }
-// };
-// #endif
+template<typename T, typename Enable = void>
+struct datatype_traits_impl {
+    static constexpr MPI_Datatype type() {
+        type_builder<T> builder;
+        return builder.build();
+    }
+};
+
 }
 
-// #ifdef ENABLE_MPI
-// template<typename T>
-// struct datatype_traits {
-//     static MPI_Datatype type() {
-//         return datatype_traits_impl<T>::type();
-//     }
-// };
-// 
-/*
-#define MPI_BUILTIN_TYPE(type, mpi_type)	  \
-template<> struct datatype_traits<type> {	  \
-  static MPI_Datatype type() { return mpi_type; } \
+template<typename T>
+struct datatype_traits {
+    static constexpr MPI_Datatype type() {
+        return detail::datatype_traits_impl<T>::type();
+    }
+    static constexpr bool is_builtin = false;
+};
+
+#define MPI_BUILTIN_TYPE(builtin_type, mpi_type)     \
+template<> struct datatype_traits<builtin_type> {    \
+    static constexpr MPI_Datatype type() {           \
+        return mpi_type;                             \
+    }                                                \
+    static constexpr bool is_builtin = true;         \
 }
 
 MPI_BUILTIN_TYPE(double, MPI_DOUBLE);
+MPI_BUILTIN_TYPE(float, MPI_FLOAT);
 
 #undef MPI_BUILTIN_TYPE
-#endif
-*/
 
-#ifdef ENABLE_MPI
+namespace detail {
+template<typename T>
+struct is_builtin {
+    static constexpr bool value = datatype_traits<T>::is_builtin;
+};
+}
+
+template<typename T, typename Op>
+struct operator_traits {
+    static constexpr MPI_Op type = MPI_OP_NULL;
+};
+
+#define MPI_BUILTIN_OP(mpi_op, cpp_op)      \
+template<typename T>                        \
+struct operator_traits<T, cpp_op<T>> {      \
+    static constexpr MPI_Op type = mpi_op;  \
+}
+
+MPI_BUILTIN_OP(MPI_SUM, std::plus);
+MPI_BUILTIN_OP(MPI_PROD, std::multiplies);
+
+#undef MPI_BUILTIN_OP
+
+template<typename T>
+class MPIOperator {
+    public:
+        template<typename Op>
+        MPIOperator(const bool commutative = true) {
+            if constexpr (detail::is_builtin<T>::value) {
+                constexpr MPI_Op op = operator_traits<T, Op>::type;
+                if constexpr (op != MPI_OP_NULL) {
+                    m_builtin = true;
+                    m_op = op;
+                    m_type = datatype_traits<T>::value;
+                }
+            }
+        }
+    private:
+        bool m_builtin{false};
+        MPI_Op m_op{MPI_OP_NULL};
+        MPI_Datatype m_type{};
+};
+
 struct Add {
     static void call(double *in, double *inout, int *len, MPI_Datatype*) {
         for(int i = 0; i < *len; ++i) {
@@ -137,7 +187,7 @@ class MPIHandler {
         }
 
         void AllReduce(void* sendbuf, int sendcount, MPI_Datatype sendtype, MPI_Op op) {
-	  MPI_Allreduce(MPI_IN_PLACE, sendbuf, sendcount, sendtype, op, mComm);
+	        MPI_Allreduce(MPI_IN_PLACE, sendbuf, sendcount, sendtype, op, mComm);
         }
 
         template<typename T, typename Op>

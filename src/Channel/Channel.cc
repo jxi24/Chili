@@ -74,7 +74,7 @@ void FSMapper::GenDecays(SparseMass &masses2, const std::vector<double> &rans) {
         double smin = std::max(std::max(smin1, smin2), m_cuts.smin[part1.idx|part2.idx]);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
         if(std::abs(decay.first.mass) < 1e-16) {
-	    masses2[decay.first.idx] = MasslessPropMomenta(0.99,smin, smax, rans[iran++]);
+            masses2[decay.first.idx] = MasslessPropMomenta(0.99,smin, smax, rans[iran++]);
         } else {
             masses2[decay.first.idx] = MassivePropMomenta(decay.first.mass, decay.first.width,
                                                           smin, smax, rans[iran++]); 

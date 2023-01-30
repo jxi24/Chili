@@ -1,9 +1,3 @@
-#include "fmt/format.h"
-#include "Tools/MPI.hh"
-#include "Integrator/Statistics.hh"
-#include "Integrator/Random.hh"
-#include "fmt/core.h"
-#include <stdexcept>
 #include "Channel/ChannelNode.hh"
 #include "Channel/Integrand.hh"
 #include "Channel/MultiChannel.hh"
@@ -11,6 +5,7 @@
 #include "Model/Model.hh"
 #include "Channel/Channel.hh"
 #include "Tools/JetCluster.hh"
+#include "Interfaces/Tensorflow.hh"
 #include <iostream>
 
 std::vector<int> combine(int i, int j) { 
@@ -59,21 +54,7 @@ bool PreProcess(const std::vector<apes::FourVector> &mom) {
 
 bool PostProcess(const std::vector<apes::FourVector>&, double) { return true; }
 
-int main(int argc, char* argv[]) {
-    auto &mpi = apes::MPIHandler::Instance();
-    mpi.Init(argc, argv);
-
-    // apes::type_builder<apes::StatsData> stats;
-    // stats.add_continuous<double, 6>();
-
-    MPI_Datatype stats_type, double_type;
-    MPI_Type_contiguous(6, MPI_DOUBLE, &stats_type);
-    MPI_Type_contiguous(1, MPI_DOUBLE, &double_type);
-    mpi.RegisterType<apes::StatsData>(stats_type);
-    mpi.RegisterType<double>(double_type);
-    mpi.RegisterOp<apes::StatsAdd>();
-    mpi.RegisterOp<apes::Add>();
-
+apes::Integrand<apes::FourVector> apes::tensorflow::ConstructIntegrand(const std::string &) {
     apes::Model model(combine);
     model.Mass(1) = 0;
     model.Mass(-1) = 0;
@@ -98,23 +79,6 @@ int main(int argc, char* argv[]) {
 
     spdlog::set_level(spdlog::level::info);
 
-    std::vector<std::vector<int>> processes{
-        {2, -2, 1, -1},
-        {-1, -2, 1, 2},
-        {1, -1, 2, -2, 2, -2},
-        {1, -1, 2, -2, 3, -3},
-        {1, -1, 1, -1, 21, 21, 21},
-        {1, -1, 2, -2, 21, 21, 21}
-    };
-
-    // Construct channels
-    // for(const auto &process : processes) {
-    //     auto mappings = apes::ConstructChannels(13000, process, model, 0);
-    //     if(mappings.size() == 0)
-    //         throw std::logic_error(fmt::format("Failed process {{{}}}",
-    //                                            fmt::join(process.begin(), process.end(), ", ")));
-    // }
-
     auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 0);
 
     // Setup integrator
@@ -130,11 +94,6 @@ int main(int argc, char* argv[]) {
         integrand.AddChannel(std::move(channel));
     }
 
-    // Initialize the multichannel integrator
-    // Takes the number of dimensions, the number of channels, and options
-    // The options can be found in the struct MultiChannelParams
-    apes::MultiChannel integrator{integrand.NDims(), integrand.NChannels(), {}};
-
     // To integrate a function you need to pass it in and tell it to optimize
     // Summary will print out a summary of the results including the values of alpha
     auto func = [&](const std::vector<apes::FourVector> &) {
@@ -143,35 +102,6 @@ int main(int argc, char* argv[]) {
     integrand.Function() = func;
     integrand.PreProcess() = PreProcess;
     integrand.PostProcess() = PostProcess;
-    if(mpi.Rank() == 0) {
-        spdlog::info("Starting optimization");
-    }
-    integrator.Optimize(integrand);
-    if(mpi.Rank() == 0) {
-      integrator.Summary(std::cout);
-    }
 
-    if(mpi.Rank() == 0) {
-        spdlog::info("Saving trained integrator");
-        size_t idx = 0;
-        for(const auto &channel : integrand.Channels()) {
-            std::string filename = fmt::format("channel_{}.bin", idx++);
-            std::ofstream output;
-            output.open(filename, std::ios::binary | std::ios::out);
-            channel.Serialize(output);
-            output.close();
-        }
-
-        spdlog::info("Finished saving");
-
-        apes::Channel<apes::FourVector> channel;
-        std::string filename = "channel_0.bin";
-        std::ifstream output;
-        output.open(filename, std::ios::binary | std::ios::in);
-        channel.Deserialize(output);
-        output.close();
-    }
-
-    mpi.CleanUp();
-    return 0;
+    return integrand;
 }
