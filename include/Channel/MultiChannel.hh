@@ -190,12 +190,15 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 
         // Evaluate the function at this point
         double wgt = GenerateWeight(func, point, ichannel, densities, rans);
-        double val = wgt == 0 ? 0 : func(point)*wgt;
+        double f = func(point);
+        double val = wgt == 0 ? 0 : f*wgt;
 
         if(std::isnan(val)){
-          std::cerr << "Encountered nan in integration" << std::endl;
-          std::cerr << "func = " << func(point) << std::endl;
-          std::cerr << "weight = " << wgt << std::endl;
+          std::cerr << "Encountered nan in integration: "
+		    << "f = " << f << ", w = " << wgt << std::endl;
+	  val = wgt = 0;
+	  i--;
+	  if (std::isnan(wgt)) continue;
         }
 
         if(params.should_optimize) AddTrainData(func, ichannel, val, wgt, train_data, rans, densities);

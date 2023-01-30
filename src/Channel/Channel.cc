@@ -22,14 +22,12 @@ bool FSMapper::_Serialize(std::ostream &out) const {
 void FSMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
     mom.resize(m_ntot);
     iran = 0;
-    SparseMass masses2;
-    SparseMom tmp_mom;
     for(size_t i = 0; i < m_nout; ++i) {
-        masses2[1 << (i + 2)] = m_cuts.sexternal[i];
+        tmp_masses[1 << (i + 2)] = m_cuts.sexternal[i];
     }
-    GenDecays(masses2, rans);
-    GenTChan(tmp_mom, rans, masses2);
-    GenSChan(tmp_mom, rans, masses2);
+    GenDecays(tmp_masses, rans);
+    GenTChan(tmp_mom, rans, tmp_masses);
+    GenSChan(tmp_mom, rans, tmp_masses);
     for(size_t i = 0; i < mom.size(); ++i) {
         mom[i] = tmp_mom[1 << i];
     }
@@ -73,8 +71,8 @@ void FSMapper::GenDecays(SparseMass &masses2, const std::vector<double> &rans) {
         double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
         double smin = std::max(std::max(smin1, smin2), m_cuts.smin[part1.idx|part2.idx]);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
-        if(std::abs(decay.first.mass) < 1e-16) {
-            masses2[decay.first.idx] = MasslessPropMomenta(0.99,smin, smax, rans[iran++]);
+        if(std::abs(decay.first.mass) < 1e-16 || decay.first.width < 1e-16) {
+	        masses2[decay.first.idx] = MasslessPropMomenta(0.99,smin, smax, rans[iran++]);
         } else {
             masses2[decay.first.idx] = MassivePropMomenta(decay.first.mass, decay.first.width,
                                                           smin, smax, rans[iran++]); 
@@ -101,7 +99,7 @@ double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
         //std::cout << "smin1 = " << smin1 << ", smin2 = " << smin2 << std::endl;
         //std::cout << "smax = "<< smax << " " << m_sqrts*m_sqrts << " " << smax / m_sqrts/m_sqrts << std::endl;
         //smax = m_sqrts;
-        if(std::abs(decay.first.mass) < 1e-16) {
+        if(std::abs(decay.first.mass) < 1e-16 || decay.first.width < 1e-16) {
             wgt *= MasslessPropWeight(0.99,smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
             // wgt *= MassivePropWeight(10., 2.,
             //                          smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
