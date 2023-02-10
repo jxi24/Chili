@@ -4,7 +4,7 @@ if(ENABLE_PYTHON)
         NB_STATIC
         nanobind.cc
     )
-    target_link_libraries(apes_interface PUBLIC fmt::fmt)
+    target_link_libraries(apes_interface PUBLIC project_options Channel)
     install(TARGETS apes_interface LIBRARY DESTINATION ${CMAKE_BINARY_DIR}/lib)
 endif()
 

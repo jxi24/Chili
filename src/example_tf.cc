@@ -54,7 +54,8 @@ bool PreProcess(const std::vector<apes::FourVector> &mom) {
 
 bool PostProcess(const std::vector<apes::FourVector>&, double) { return true; }
 
-apes::Integrand<apes::FourVector> apes::tensorflow::ConstructIntegrand(const std::string &) {
+std::unique_ptr<apes::Integrand<apes::FourVector>> apes::python::ConstructIntegrand(const std::string &) {
+    std::cout << "here" << std::endl;
     apes::Model model(combine);
     model.Mass(1) = 0;
     model.Mass(-1) = 0;
@@ -82,7 +83,7 @@ apes::Integrand<apes::FourVector> apes::tensorflow::ConstructIntegrand(const std
     auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 0);
 
     // Setup integrator
-    apes::Integrand<apes::FourVector> integrand;
+    auto integrand = std::make_unique<apes::Integrand<apes::FourVector>>();
     for(auto &mapping : mappings) {
         apes::Channel<apes::FourVector> channel;
         channel.mapping = std::move(mapping);
@@ -91,7 +92,7 @@ apes::Integrand<apes::FourVector> apes::tensorflow::ConstructIntegrand(const std
         apes::AdaptiveMap map(channel.mapping -> NDims(), 2);
         // Initializer takes adaptive map and settings (found in struct VegasParams)
         channel.integrator = apes::Vegas(map, apes::VegasParams{});
-        integrand.AddChannel(std::move(channel));
+        integrand -> AddChannel(std::move(channel));
     }
 
     // To integrate a function you need to pass it in and tell it to optimize
@@ -99,9 +100,9 @@ apes::Integrand<apes::FourVector> apes::tensorflow::ConstructIntegrand(const std
     auto func = [&](const std::vector<apes::FourVector> &) {
         return 1; // (pow(p[0]*p[2], 2)+pow(p[0]*p[3], 2))/pow(p[2]*p[3], 2);
     };
-    integrand.Function() = func;
-    integrand.PreProcess() = PreProcess;
-    integrand.PostProcess() = PostProcess;
+    integrand->Function() = func;
+    integrand->PreProcess() = PreProcess;
+    integrand->PostProcess() = PostProcess;
 
-    return integrand;
+    return std::move(integrand);
 }

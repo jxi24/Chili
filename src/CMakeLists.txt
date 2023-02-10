@@ -13,23 +13,19 @@ add_executable(example2 example2.cc)
 target_link_libraries(example2 PRIVATE project_options project_warnings)
 
 add_library(apes SHARED $<TARGET_OBJECTS:Channel>)
-target_link_libraries(apes PUBLIC Channel)
-target_link_libraries(apes PUBLIC Tools)
-target_link_libraries(apes PUBLIC Integrator)
+target_link_libraries(apes PUBLIC Channel Tools Integrator)
+
+install(TARGETS apes Tools Integrator Channel spdlog fmt yaml-cpp
+        EXPORT ApesTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
+)
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(TARGETS apes
-  EXPORT apes
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-#   DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-# #  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-set_target_properties(Tools Integrator Channel apes spdlog fmt yaml-cpp PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
 if(MPI_FOUND)
   add_executable(example3 example_mpi.cc)
   target_link_libraries(example3 PRIVATE project_options project_warnings

@@ -9,6 +9,12 @@ endif()
 project(APES LANGUAGES CXX VERSION 1.0.0)
 include(CMake/StandardProjectSettings.cmake)
 
+file(RELATIVE_PATH relativeRpath
+    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+)
+set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/${relativeRpath})
+
 # Link this 'library' to set the c++ standard / compile-time options requested
 # Additionally, link to get include and external dependencies
 add_library(project_options INTERFACE)
@@ -62,8 +68,11 @@ if(ENABLE_MPI)
     endif() 
 endif()
 
+if(ENABLE_TENSORFLOW OR ENABLE_PYTHON)
+    find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
+endif()
+
 if(ENABLE_TENSORFLOW)
-    find_package(Python 3.8 COMPONENTS Interpreter REQUIRED)
     execute_process(COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/CMake/FindTensorFlowLib.py OUTPUT_VARIABLE Tensorflow_LIBRARIES ERROR_VARIABLE Tensorflow-NOTFOUND)
     execute_process(COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/CMake/FindTensorFlowCompile.py OUTPUT_VARIABLE Tensorflow_CFLAGS ERROR_VARIABLE Tensorflow-NOTFOUND)
     if(Tensorflow-NOTFOUND)

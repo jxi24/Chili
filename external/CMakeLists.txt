@@ -55,6 +55,15 @@ install(TARGETS yaml-cpp
 install(DIRECTORY ${YAML_CPP_SOURCE_DIR}/include/yaml-cpp
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+
+if(ENABLE_PYTHON)
+    CPMAddPackage(
+        NAME nanobind
+        GITHUB_REPOSITORY wjakob/nanobind
+        VERSION 0.1.0
+    )
+endif()
+
 # CPMFindPackage(
 #     NAME libzippp
 #     GIT_TAG "libzippp-v6.0-1.9.2"
