@@ -2,8 +2,8 @@
 #include "Tools/FourVector.hh"
 #include "spdlog/spdlog.h"
 
-using apes::FourVector;
-using apes::JetCluster;
+using chili::FourVector;
+using chili::JetCluster;
 
 std::vector<FourVector> JetCluster::operator()(const std::vector<FourVector> &parts) {
     std::vector<FourVector> tmp(parts.begin()+2, parts.end()), jets;

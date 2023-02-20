@@ -8,7 +8,7 @@
 namespace nb = nanobind;
 using namespace nb::literals;
 
-namespace apes::nanobind {
+namespace chili::nanobind {
 
 template<typename Device>
 using input = nb::tensor<double, nb::shape<nb::any, nb::any>, nb::c_contig, Device>;
@@ -19,7 +19,7 @@ using output = nb::tensor<double, nb::shape<nb::any>, nb::c_contig, Device>;
 template<typename Device>
 class Interface {
     public:
-        Interface(const std::string &args) { integrand = apes::python::ConstructIntegrand(args); }
+        Interface(const std::string &args) { integrand = chili::python::ConstructIntegrand(args); }
         output<Device> Evaluate(input<Device> in_tensor) {
             std::vector<double> out(in_tensor.shape(0));
             auto &mapping = integrand -> GetChannel(0).mapping;
@@ -28,7 +28,7 @@ class Interface {
                 for(size_t irand = 0; irand < in_tensor.shape(1); ++irand) {
                     rans[irand] = in_tensor(ibatch, irand);
                 }
-                std::vector<apes::FourVector> point;
+                std::vector<chili::FourVector> point;
                 mapping -> GeneratePoint(point, rans);
 
                 if(!integrand->PreProcess()(point)) {

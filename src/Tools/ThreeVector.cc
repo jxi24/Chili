@@ -2,7 +2,7 @@
 
 #include "Tools/ThreeVector.hh"
 
-using namespace apes;
+using namespace chili;
 
 double ThreeVector::Theta() const noexcept {
     return atan2(Pt(), Pz());
@@ -44,7 +44,7 @@ ThreeVector ThreeVector::Rotate(const RotMat &mat) const noexcept {
             mat[6]*vec[0]+mat[7]*vec[1]+mat[8]*vec[2]};
 }
 
-apes::ThreeVector::RotMat ThreeVector::Align(const ThreeVector &axis) const noexcept {
+chili::ThreeVector::RotMat ThreeVector::Align(const ThreeVector &axis) const noexcept {
 
     ThreeVector a = Unit();
 
@@ -56,7 +56,7 @@ apes::ThreeVector::RotMat ThreeVector::Align(const ThreeVector &axis) const noex
             -v[1]+v[0]*v[2]/(1+c), v[0]+v[1]*v[2]/(1+c), 1-v[0]*v[0]/(1+c)-v[1]*v[1]/(1+c)};
 }
 
-apes::ThreeVector::RotMat ThreeVector::AlignZ() const noexcept {
+chili::ThreeVector::RotMat ThreeVector::AlignZ() const noexcept {
     ThreeVector z{0, 0, 1};
     return Align(z);
 }
@@ -130,7 +130,7 @@ std::string ThreeVector::ToString() const noexcept {
         + std::to_string(vec[1]) + ", " + std::to_string(vec[2]) + ")";
 }
 
-namespace apes {
+namespace chili {
 
 std::istream& operator>>(std::istream& is, ThreeVector& vec) {
     std::string head(12, ' '), sep1(1, ' '), sep2(1, ' '), tail(1, ' ');

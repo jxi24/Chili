@@ -6,7 +6,7 @@
 #include "Integrator/AdaptiveMap.hh"
 #include "Integrator/Random.hh"
 
-using apes::AdaptiveMap;
+using chili::AdaptiveMap;
 
 bool AdaptiveMap::Deserialize(std::istream &in) {
     in.read(reinterpret_cast<char*>(&m_bins), sizeof(m_bins));
@@ -124,7 +124,7 @@ void AdaptiveMap::Adapt(const double &alpha, const std::vector<double> &data) {
     m_hist = new_hist;
 }
 
-void AdaptiveMap::Split(apes::AdaptiveMapSplit split) {
+void AdaptiveMap::Split(chili::AdaptiveMapSplit split) {
     size_t nsplit{};
     if(split == AdaptiveMapSplit::half) {
         nsplit = 2;

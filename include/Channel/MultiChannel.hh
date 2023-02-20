@@ -10,7 +10,7 @@
 #include "Tools/MPI.hh"
 #endif
 
-namespace apes {
+namespace chili {
 
 struct MultiChannelSummary {
     std::vector<StatsData> results;
@@ -79,7 +79,7 @@ class MultiChannel {
         MultiChannelSummary Summary(std::ostream &str);
 
         // YAML interface
-        friend YAML::convert<apes::MultiChannel>;
+        friend YAML::convert<chili::MultiChannel>;
 
     private:
         void Adapt(const std::vector<double>&);
@@ -105,7 +105,7 @@ class MultiChannel {
 };
 
 template<typename T>
-size_t apes::MultiChannel::GeneratePoint(const Integrand<T> &func,
+size_t chili::MultiChannel::GeneratePoint(const Integrand<T> &func,
                                        std::vector<T>& point) const {
   // Generate single point without any of the surroundings
   std::vector<double> rans(ndims);
@@ -116,7 +116,7 @@ size_t apes::MultiChannel::GeneratePoint(const Integrand<T> &func,
 }
 
 template<typename T>
-double apes::MultiChannel::GenerateWeight(const Integrand<T> &func,
+double chili::MultiChannel::GenerateWeight(const Integrand<T> &func,
                       std::vector<T>& point, size_t ichannel, std::optional<ref_vector> densities,
                       std::optional<ref_vector> rans) const {
     if(densities and rans) {
@@ -131,7 +131,7 @@ double apes::MultiChannel::GenerateWeight(const Integrand<T> &func,
 }
 
 template<typename T>
-void apes::MultiChannel::AddTrainData(Integrand<T> &func, size_t ichannel, double val, double wgt,
+void chili::MultiChannel::AddTrainData(Integrand<T> &func, size_t ichannel, double val, double wgt,
                                       std::vector<double> &train_data, const std::vector<double> &rans,
                                       const std::vector<double> &densities) {
     double val2 = val*val;
@@ -146,7 +146,7 @@ void apes::MultiChannel::AddTrainData(Integrand<T> &func, size_t ichannel, doubl
 }
 
 template<typename T>
-void apes::MultiChannel::Train(Integrand<T> &func, std::vector<double> &train_data) {
+void chili::MultiChannel::Train(Integrand<T> &func, std::vector<double> &train_data) {
 #ifdef ENABLE_MPI
     // Combine mpi results
     auto &mpi = MPIHandler::Instance();
@@ -160,7 +160,7 @@ void apes::MultiChannel::Train(Integrand<T> &func, std::vector<double> &train_da
 }
 
 template<typename T>
-void apes::MultiChannel::operator()(Integrand<T> &func) {
+void chili::MultiChannel::operator()(Integrand<T> &func) {
     size_t nchannels = channel_weights.size();
     std::vector<double> rans(ndims);
     std::vector<T> point(ndims);
@@ -194,11 +194,11 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
         double val = wgt == 0 ? 0 : f*wgt;
 
         if(std::isnan(val)){
-          std::cerr << "Encountered nan in integration: "
-		    << "f = " << f << ", w = " << wgt << std::endl;
-	  val = wgt = 0;
-	  i--;
-	  if (std::isnan(wgt)) continue;
+            std::cerr << "Encountered nan in integration: "
+		        << "f = " << f << ", w = " << wgt << std::endl;
+	        val = wgt = 0;
+	        i--;
+	        if (std::isnan(wgt)) continue;
         }
 
         if(params.should_optimize) AddTrainData(func, ichannel, val, wgt, train_data, rans, densities);
@@ -217,7 +217,7 @@ void apes::MultiChannel::operator()(Integrand<T> &func) {
 }
 
 template<typename T>
-void apes::MultiChannel::Optimize(Integrand<T> &func,std::ostream &ostr) {
+void chili::MultiChannel::Optimize(Integrand<T> &func,std::ostream &ostr) {
     double rel_err = lim::max();
 
     while((rel_err > params.rtol) && summary.results.size() < params.niterations) {
@@ -238,8 +238,8 @@ void apes::MultiChannel::Optimize(Integrand<T> &func,std::ostream &ostr) {
 namespace YAML {
 
 template<>
-struct convert<apes::MultiChannelSummary> {
-    static Node encode(const apes::MultiChannelSummary &rhs) {
+struct convert<chili::MultiChannelSummary> {
+    static Node encode(const chili::MultiChannelSummary &rhs) {
         Node node;
         node["NEntries"] = rhs.results.size();
         for(const auto &entry : rhs.results)
@@ -252,14 +252,14 @@ struct convert<apes::MultiChannelSummary> {
         return node;
     }
 
-    static bool decode(const Node &node, apes::MultiChannelSummary &rhs) {
+    static bool decode(const Node &node, chili::MultiChannelSummary &rhs) {
         // Get the number of entries and ensure that is the number of entries
         auto nentries = node["NEntries"].as<size_t>();
         if(node["Entries"].size() != nentries) return false;
 
         // Load the entries and keep track of the sum
         for(const auto &entry : node["Entries"]) {
-            rhs.results.push_back(entry.as<apes::StatsData>());
+            rhs.results.push_back(entry.as<chili::StatsData>());
             rhs.sum_results += rhs.results.back();
         }
 
@@ -276,8 +276,8 @@ struct convert<apes::MultiChannelSummary> {
 };
 
 template<>
-struct convert<apes::MultiChannelParams> {
-    static Node encode(const apes::MultiChannelParams &rhs) {
+struct convert<chili::MultiChannelParams> {
+    static Node encode(const chili::MultiChannelParams &rhs) {
         Node node;
 
         node["NCalls"] = rhs.ncalls;
@@ -293,7 +293,7 @@ struct convert<apes::MultiChannelParams> {
         return node;
     }
 
-    static bool decode(const Node &node, apes::MultiChannelParams &rhs) {
+    static bool decode(const Node &node, chili::MultiChannelParams &rhs) {
         if(node.size() != rhs.nparams) return false;
 
         rhs.ncalls = node["NCalls"].as<size_t>();

@@ -1,14 +1,14 @@
 #include "Channel/MultiChannel.hh"
 #include <ctime>
 
-apes::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_)
+chili::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_)
                                      : ndims{std::move(dims)}, params{std::move(params_)} {
     for(size_t i = 0; i < nchannels; ++i) {
         channel_weights.push_back(1.0/static_cast<double>(nchannels));
     }
 }
 
-void apes::MultiChannel::UpdateResults(StatsData &results) {
+void chili::MultiChannel::UpdateResults(StatsData &results) {
 #ifdef ENABLE_MPI
     // Combine mpi results
     auto &mpi = MPIHandler::Instance();
@@ -18,7 +18,7 @@ void apes::MultiChannel::UpdateResults(StatsData &results) {
     summary.sum_results += results;
 }
 
-void apes::MultiChannel::Adapt(const std::vector<double> &train) {
+void chili::MultiChannel::Adapt(const std::vector<double> &train) {
     std::vector<double> new_weights(channel_weights.size());
 
     spdlog::debug("MultiChannel::Adapt:");
@@ -47,7 +47,7 @@ void apes::MultiChannel::Adapt(const std::vector<double> &train) {
     channel_weights = new_weights;
 }
 
-void apes::MultiChannel::MaxDifference(const std::vector<double> &train) {
+void chili::MultiChannel::MaxDifference(const std::vector<double> &train) {
     double max = 0;
 
     for(size_t i = 0; i < train.size() - 1; ++i) {
@@ -65,7 +65,7 @@ void apes::MultiChannel::MaxDifference(const std::vector<double> &train) {
     }
 }
 
-apes::MultiChannelSummary apes::MultiChannel::Summary(std::ostream &str) {
+chili::MultiChannelSummary chili::MultiChannel::Summary(std::ostream &str) {
     summary.best_weights = best_weights;
     str << "Final integral = "
               << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)",
@@ -79,7 +79,7 @@ apes::MultiChannelSummary apes::MultiChannel::Summary(std::ostream &str) {
     return summary;
 }
 
-void apes::MultiChannel::PrintIteration(std::ostream &str) const {
+void chili::MultiChannel::PrintIteration(std::ostream &str) const {
   std::time_t t = std::time(0);
   std::tm* now = std::localtime(&t);
   double calls=static_cast<double>(summary.results.back().Calls());

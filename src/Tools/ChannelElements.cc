@@ -4,9 +4,9 @@
 #include "Tools/Utilities.hh"
 #include "spdlog/spdlog.h"
 
-using namespace apes;
+using namespace chili;
 
-FourVector apes::LT(const FourVector &a,const FourVector &b,const FourVector &c) {
+FourVector chili::LT(const FourVector &a,const FourVector &b,const FourVector &c) {
   double t(a[1]*b[2]*c[3]+a[2]*b[3]*c[1]+a[3]*b[1]*c[2]
 	   -a[1]*b[3]*c[2]-a[3]*b[2]*c[1]-a[2]*b[1]*c[3]);
   double x(-a[0]*b[2]*c[3]-a[2]*b[3]*c[0]-a[3]*b[0]*c[2]
@@ -18,20 +18,20 @@ FourVector apes::LT(const FourVector &a,const FourVector &b,const FourVector &c)
   return FourVector(t,-x,-y,-z);
 }
 
-double apes::SqLam(double s,double s1,double s2) {
+double chili::SqLam(double s,double s1,double s2) {
   double arg(sqr(s-s1-s2)-4.*s1*s2);
   if (arg>0.) return sqrt(arg)/s;
   return 0.;
 }
 
-double apes::PeakedDist(double a,double cn,double cxm,double cxp,int k,double ran)
+double chili::PeakedDist(double a,double cn,double cxm,double cxp,int k,double ran)
 {
   double ce(1.-cn);
   if (ce!=0.) return k*(pow(ran*pow(a+k*cxp,ce)+(1.-ran)*pow(a+k*cxm,ce),1/ce)-a);
   return k*((a+k*cxm)*pow((a+k*cxp)/(a+k*cxm),ran)-a);
 }
 
-double apes::PeakedWeight(double a,double cn,double cxm,double cxp,double res,int k,double &ran)
+double chili::PeakedWeight(double a,double cn,double cxm,double cxp,double res,int k,double &ran)
 {
   double ce(1.-cn), w;
   if (ce!=0.) {
@@ -49,19 +49,19 @@ double apes::PeakedWeight(double a,double cn,double cxm,double cxp,double res,in
   return w;
 }
 
-double apes::MasslessPropWeight
+double chili::MasslessPropWeight
 (double sexp,double smin,double smax,const double s,double &ran)
 {
   return PeakedWeight(0.,sexp,smin,smax,s,1,ran)/pow(s,-sexp);
 }
 
-double apes::MasslessPropMomenta
+double chili::MasslessPropMomenta
 (double sexp,double smin,double smax, double ran)
 {
   return PeakedDist(0.,sexp,smin,smax,1,ran);
 }
 
-double apes::MassivePropWeight(double m,double g,double smin,double smax,double s,double &ran) {
+double chili::MassivePropWeight(double m,double g,double smin,double smax,double s,double &ran) {
   if (s<smin || s>smax)
     spdlog::error("MassivePropWeight(): Value out of bounds: {} .. {} vs. {}",smin,smax,s);
   double m2(m*m), mw(m*g);
@@ -74,7 +74,7 @@ double apes::MassivePropWeight(double m,double g,double smin,double smax,double 
   return w;
 }
 
-double apes::MassivePropMomenta
+double chili::MassivePropMomenta
 (double m,double g,double smin,double smax,double ran)
 {
   double m2(m*m), mw(m*g), s;
@@ -84,7 +84,7 @@ double apes::MassivePropMomenta
   return s;
 }
 
-void apes::SChannelMomenta
+void chili::SChannelMomenta
 (FourVector p,double s1,double s2,FourVector &p1,FourVector &p2,double ran1,
  double ran2,double ctmin,double ctmax,const FourVector &_xref)
 {
@@ -103,7 +103,7 @@ void apes::SChannelMomenta
   p2=p-p1;
 }
 
-double apes::SChannelWeight
+double chili::SChannelWeight
 (const FourVector &p1, const FourVector &p2,double &ran1, double &ran2,
  double ctmin, double ctmax,const FourVector &_xref)
 {

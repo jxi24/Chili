@@ -1,7 +1,7 @@
 #include "Tools/MPI.hh"
 #include "spdlog/spdlog.h"
 
-using apes::MPIHandler;
+using chili::MPIHandler;
 
 MPIHandler MPIHandler::mpi;
 

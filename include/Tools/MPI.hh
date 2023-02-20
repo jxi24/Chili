@@ -7,7 +7,7 @@
 #include "mpi.h"
 #endif
 
-namespace apes {
+namespace chili {
 
 #ifdef ENABLE_MPI
 
@@ -117,7 +117,7 @@ struct Add {
 };
 
 struct StatsAdd {
-    static void call(apes::StatsData *in, apes::StatsData *inout, int *len, MPI_Datatype*) {
+    static void call(chili::StatsData *in, chili::StatsData *inout, int *len, MPI_Datatype*) {
         for(int i = 0; i < *len; ++i) {
             inout[i] += in[i];
         }

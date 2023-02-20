@@ -6,7 +6,7 @@ if(POLICY CMP0053)
 endif()
 
 # Set the project name and basic settings
-project(APES LANGUAGES CXX VERSION 1.0.0)
+project(CHILI LANGUAGES CXX VERSION 1.0.0)
 include(CMake/StandardProjectSettings.cmake)
 
 file(RELATIVE_PATH relativeRpath
@@ -113,35 +113,35 @@ add_subdirectory(src)
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
-    ${CMAKE_SOURCE_DIR}/CMake/apes-config.cmake.in
-    ${CMAKE_BINARY_DIR}/CMake/apes-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/apes
+    ${CMAKE_SOURCE_DIR}/CMake/chili-config.cmake.in
+    ${CMAKE_BINARY_DIR}/CMake/chili-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/chili
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR
               CMAKE_INSTALL_LIBDIR
 )
 
 configure_package_config_file(
-  ${CMAKE_SOURCE_DIR}/CMake/apes-config.in
-  ${CMAKE_CURRENT_BINARY_DIR}/bin/apes-config
+  ${CMAKE_SOURCE_DIR}/CMake/chili-config.in
+  ${CMAKE_CURRENT_BINARY_DIR}/bin/chili-config
   INSTALL_DESTINATION ${CMAKE_INSTALL_BINDIR}
   PATH_VARS CMAKE_INSTALL_INCLUDEDIR
             CMAKE_INSTALL_LIBDIR)
 
 write_basic_package_version_file(
-    ${CMAKE_BINARY_DIR}/CMake/apes-config-version.cmake
+    ${CMAKE_BINARY_DIR}/CMake/chili-config-version.cmake
     VERSION ${ACHILLES_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 
 install(
     FILES
-        ${CMAKE_BINARY_DIR}/CMake/apes-config.cmake
-        ${CMAKE_BINARY_DIR}/CMake/apes-config-version.cmake
+        ${CMAKE_BINARY_DIR}/CMake/chili-config.cmake
+        ${CMAKE_BINARY_DIR}/CMake/chili-config-version.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/apes
 )
 
 install(
     FILES
-        ${CMAKE_BINARY_DIR}/bin/apes-config
+        ${CMAKE_BINARY_DIR}/bin/chili-config
     DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

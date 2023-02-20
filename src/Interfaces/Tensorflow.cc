@@ -1,3 +1,4 @@
+#include "Tools/MPI.hh"
 #include "tensorflow/core/framework/shape_inference.h"
 #include "Interfaces/Tensorflow.hh"
 #include "Channel/MultiChannel.hh"
@@ -6,19 +7,19 @@
 #include "tensorflow/core/util/work_sharder.h"
 #include "tensorflow/core/framework/op_kernel.h"
 
-namespace apes::tensorflow {
+namespace chili::tensorflow {
 
 namespace functor {
 
 template<typename Device>
-struct ApesFunctor {
-    void operator()(const ::tensorflow::OpKernelContext*, size_t, size_t, const double*, double*, std::unique_ptr<apes::Integrand<apes::FourVector>>&);
+struct ChiliFunctor {
+    void operator()(const ::tensorflow::OpKernelContext*, size_t, size_t, const double*, double*, std::unique_ptr<chili::Integrand<chili::FourVector>>&);
 };
 
 }
 }
 
-REGISTER_OP("CallApes")
+REGISTER_OP("CallChili")
     .Input("random: float64")
     .Attr("runcard: string = ''")
     .Output("xsec: float64");
@@ -30,8 +31,8 @@ using CPUDevice = Eigen::ThreadPoolDevice;
 struct SingleThread {};
 
 template<>
-struct apes::tensorflow::functor::ApesFunctor<CPUDevice> {
-    void operator()(OpKernelContext *ctx, size_t nBatch, size_t nRandom, const double *in, double *out, std::unique_ptr<apes::Integrand<apes::FourVector>> &integrand) {
+struct chili::tensorflow::functor::ChiliFunctor<CPUDevice> {
+    void operator()(OpKernelContext *ctx, size_t nBatch, size_t nRandom, const double *in, double *out, std::unique_ptr<chili::Integrand<chili::FourVector>> &integrand) {
         auto thread_pool = ctx->device()->tensorflow_cpu_worker_threads()->workers;
 
         thread_pool->ParallelFor(
@@ -43,7 +44,7 @@ struct apes::tensorflow::functor::ApesFunctor<CPUDevice> {
                         for(size_t irand = 0; irand < nRandom; ++irand) {
                             rans[irand] = in[ibatch*nRandom + irand];
                         }
-                        std::vector<apes::FourVector> point;
+                        std::vector<chili::FourVector> point;
                         mapping -> GeneratePoint(point, rans); 
 
                         if(!integrand->PreProcess()(point)) {
@@ -65,15 +66,15 @@ struct apes::tensorflow::functor::ApesFunctor<CPUDevice> {
 };
 
 template<>
-struct apes::tensorflow::functor::ApesFunctor<SingleThread> {
-    void operator()(OpKernelContext *ctx, size_t nBatch, size_t nRandom, const double *in, double *out, std::unique_ptr<apes::Integrand<apes::FourVector>> &integrand) {
+struct chili::tensorflow::functor::ChiliFunctor<SingleThread> {
+    void operator()(OpKernelContext *ctx, size_t nBatch, size_t nRandom, const double *in, double *out, std::unique_ptr<chili::Integrand<chili::FourVector>> &integrand) {
         auto &mapping = integrand -> GetChannel(0).mapping;
         std::vector<double> rans(nRandom);
         for(size_t ibatch=0; ibatch<nBatch; ++ibatch) {
             for(size_t irand = 0; irand < nRandom; ++irand) {
                 rans[irand] = in[ibatch*nRandom + irand];
             }
-            std::vector<apes::FourVector> point;
+            std::vector<chili::FourVector> point;
             mapping -> GeneratePoint(point, rans); 
 
             if(!integrand->PreProcess()(point)) {
@@ -94,16 +95,16 @@ struct apes::tensorflow::functor::ApesFunctor<SingleThread> {
 };
 
 template<typename Device>
-class CallApesOp : public OpKernel {
+class CallChiliOp : public OpKernel {
     private:
-        static std::unique_ptr<apes::Integrand<apes::FourVector>> integrand;
+        static std::unique_ptr<chili::Integrand<chili::FourVector>> integrand;
 
     public:
-        explicit CallApesOp(OpKernelConstruction* context) : OpKernel(context) {
+        explicit CallChiliOp(OpKernelConstruction* context) : OpKernel(context) {
             std::string run_card;
             OP_REQUIRES_OK(context, context->GetAttr("runcard", &run_card));
             if(!integrand) {
-                integrand = apes::python::ConstructIntegrand(run_card);
+                integrand = chili::python::ConstructIntegrand(run_card);
 
                 if(integrand -> NChannels() != 1)
                     throw std::runtime_error("TF Interface only valid for single channel");
@@ -125,7 +126,7 @@ class CallApesOp : public OpKernel {
             OP_REQUIRES_OK(context, context->allocate_output(0, output_shape, &output_tensor));
 
             // Calculate the cross-sections
-            apes::tensorflow::functor::ApesFunctor<Device>()(
+            chili::tensorflow::functor::ChiliFunctor<Device>()(
                     context,
                     nBatch, nRandom,
                     input.data(),
@@ -135,7 +136,7 @@ class CallApesOp : public OpKernel {
 };
 
 template<typename Device>
-std::unique_ptr<apes::Integrand<apes::FourVector>> CallApesOp<Device>::integrand = nullptr;
+std::unique_ptr<chili::Integrand<chili::FourVector>> CallChiliOp<Device>::integrand = nullptr;
 
-REGISTER_KERNEL_BUILDER(Name("CallApesThreaded").Device(DEVICE_CPU), CallApesOp<CPUDevice>);
-REGISTER_KERNEL_BUILDER(Name("CallApes").Device(DEVICE_CPU), CallApesOp<SingleThread>);
+REGISTER_KERNEL_BUILDER(Name("CallChiliThreaded").Device(DEVICE_CPU), CallChiliOp<CPUDevice>);
+REGISTER_KERNEL_BUILDER(Name("CallChili").Device(DEVICE_CPU), CallChiliOp<SingleThread>);

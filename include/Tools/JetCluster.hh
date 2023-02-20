@@ -3,7 +3,7 @@
 
 #include "Tools/FourVector.hh"
 
-namespace apes {
+namespace chili {
 
 class JetCluster {
     public:

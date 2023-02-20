@@ -3,7 +3,7 @@
 #include "Channel/Integrand.hh"
 #include "Tools/FourVector.hh"
 
-namespace apes::python {
+namespace chili::python {
 
 std::unique_ptr<Integrand<FourVector>> ConstructIntegrand(const std::string&);
 

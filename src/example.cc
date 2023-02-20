@@ -22,7 +22,7 @@ std::vector<int> combine(int i, int j) {
     return {};
 }
 
-bool PreProcess(const std::vector<apes::FourVector> &mom) {
+bool PreProcess(const std::vector<chili::FourVector> &mom) {
     if(std::isnan(mom[0][0])) {
         spdlog::info("Failed inital state");
         return false;
@@ -31,7 +31,7 @@ bool PreProcess(const std::vector<apes::FourVector> &mom) {
         spdlog::info("Failed s limit");
         return false;
     }
-    apes::JetCluster cluster(0.4);
+    chili::JetCluster cluster(0.4);
     auto jets = cluster(mom);
     if(jets.size() < mom.size()-2) return false;
     return true;
@@ -51,10 +51,10 @@ bool PreProcess(const std::vector<apes::FourVector> &mom) {
     return true;
 }
 
-bool PostProcess(const std::vector<apes::FourVector>&, double) { return true; }
+bool PostProcess(const std::vector<chili::FourVector>&, double) { return true; }
 
 int main() {
-    apes::Model model(combine);
+    chili::Model model(combine);
     model.Mass(1) = 0;
     model.Mass(-1) = 0;
     model.Mass(2) = 0;
@@ -89,35 +89,35 @@ int main() {
 
     // Construct channels
     // for(const auto &process : processes) {
-    //     auto mappings = apes::ConstructChannels(13000, process, model, 0);
+    //     auto mappings = chili::ConstructChannels(13000, process, model, 0);
     //     if(mappings.size() == 0)
     //         throw std::logic_error(fmt::format("Failed process {{{}}}",
     //                                            fmt::join(process.begin(), process.end(), ", ")));
     // }
 
-    auto mappings = apes::ConstructChannels(13000, {21, 21, 21, 21}, model, 0);
+    auto mappings = chili::ConstructChannels(13000, {21, 21, 21, 21}, model, 0);
 
     // Setup integrator
-    apes::Integrand<apes::FourVector> integrand;
+    chili::Integrand<chili::FourVector> integrand;
     for(auto &mapping : mappings) {
-        apes::Channel<apes::FourVector> channel;
+        chili::Channel<chili::FourVector> channel;
         channel.mapping = std::move(mapping);
         // Initializer takes the number of integration dimensions
         // and the number of bins for vegas to start with
-        apes::AdaptiveMap map(channel.mapping -> NDims(), 2);
+        chili::AdaptiveMap map(channel.mapping -> NDims(), 2);
         // Initializer takes adaptive map and settings (found in struct VegasParams)
-        channel.integrator = apes::Vegas(map, apes::VegasParams{});
+        channel.integrator = chili::Vegas(map, chili::VegasParams{});
         integrand.AddChannel(std::move(channel));
     }
 
     // Initialize the multichannel integrator
     // Takes the number of dimensions, the number of channels, and options
     // The options can be found in the struct MultiChannelParams
-    apes::MultiChannel integrator{integrand.NDims(), integrand.NChannels(), {}};
+    chili::MultiChannel integrator{integrand.NDims(), integrand.NChannels(), {}};
 
     // To integrate a function you need to pass it in and tell it to optimize
     // Summary will print out a summary of the results including the values of alpha
-    auto func = [&](const std::vector<apes::FourVector> &) {
+    auto func = [&](const std::vector<chili::FourVector> &) {
         return 1; // (pow(p[0]*p[2], 2)+pow(p[0]*p[3], 2))/pow(p[2]*p[3], 2);
     };
     integrand.Function() = func;
@@ -139,7 +139,7 @@ int main() {
 
     spdlog::info("Finished saving");
 
-    apes::Channel<apes::FourVector> channel;
+    chili::Channel<chili::FourVector> channel;
     std::string filename = "channel_0.bin";
     std::ifstream output;
     output.open(filename, std::ios::binary | std::ios::in);

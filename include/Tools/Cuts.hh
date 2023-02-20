@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-namespace apes {
+namespace chili {
 
 struct Cuts {
     std::vector<double> sexternal;

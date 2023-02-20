@@ -22,7 +22,7 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
-namespace apes {
+namespace chili {
 
 template<typename T>
 using Func = std::function<double(const std::vector<T>&)>;
@@ -83,7 +83,7 @@ class Vegas {
         VegasSummary Summary() const; 
 
         // YAML interface
-        friend YAML::convert<apes::Vegas>;
+        friend YAML::convert<chili::Vegas>;
 
     private:
         void PrintIteration() const;
@@ -99,8 +99,8 @@ class Vegas {
 namespace YAML {
 
 template<>
-struct convert<apes::VegasSummary> {
-    static Node encode(const apes::VegasSummary &rhs) {
+struct convert<chili::VegasSummary> {
+    static Node encode(const chili::VegasSummary &rhs) {
         Node node;
         node["nentries"] = rhs.results.size();
         for(const auto &entry : rhs.results)
@@ -109,7 +109,7 @@ struct convert<apes::VegasSummary> {
         return node;
     }
 
-    static bool decode(const Node &node, apes::VegasSummary &rhs) {
+    static bool decode(const Node &node, chili::VegasSummary &rhs) {
         // Get the number of entries and ensure that is the number of entries
         // If the number of entries is zero, return then to prevent an error
         auto nentries = node["nentries"].as<size_t>();
@@ -118,7 +118,7 @@ struct convert<apes::VegasSummary> {
 
         // Load the entries and keep track of the sum
         for(const auto &entry : node["entries"]) {
-            rhs.results.push_back(entry.as<apes::StatsData>());
+            rhs.results.push_back(entry.as<chili::StatsData>());
             rhs.sum_results += rhs.results.back();
         }
 

@@ -7,7 +7,7 @@
 #include "spdlog/fmt/ostr.h"
 #include "fmt/format.h"
 
-namespace apes {
+namespace chili {
 
 class ThreeVector;
 
@@ -397,7 +397,7 @@ FourVector operator*(const double&, const FourVector&) noexcept;
 
 }
 
-template<> struct fmt::formatter<apes::FourVector> {
+template<> struct fmt::formatter<chili::FourVector> {
     char presentation = 'e';
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
         // Parse the presentation format and store it in the formatter:
@@ -413,7 +413,7 @@ template<> struct fmt::formatter<apes::FourVector> {
     }
 
     template<typename FormatContext>
-    auto format(const apes::FourVector& p, FormatContext& ctx) -> decltype(ctx.out()) {
+    auto format(const chili::FourVector& p, FormatContext& ctx) -> decltype(ctx.out()) {
         // ctx.out() is an output iterator to write to
         return format_to(
                 ctx.out(),

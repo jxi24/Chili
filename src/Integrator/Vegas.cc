@@ -12,8 +12,8 @@
 #include "spdlog/spdlog.h"
 
 
-using apes::Vegas;
-using apes::VegasSummary;
+using chili::Vegas;
+using chili::VegasSummary;
 
 void Vegas::operator()(const Func<double> &func) {
     std::vector<double> rans(grid.Dims());

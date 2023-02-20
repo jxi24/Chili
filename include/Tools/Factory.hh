@@ -6,7 +6,7 @@
 #include <memory>
 #include <iostream>
 
-namespace apes {
+namespace chili {
 
 template<typename Base>
 class Factory {

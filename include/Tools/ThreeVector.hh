@@ -6,7 +6,7 @@
 
 #include "spdlog/fmt/ostr.h"
 
-namespace apes {
+namespace chili {
 
 /// @brief ThreeVector is a container for dealing with three vectors
 ///

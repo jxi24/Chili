@@ -2,7 +2,7 @@
 
 #include "Tools/FourVector.hh"
 
-namespace apes {
+namespace chili {
 
   double SqLam(double,double,double);
   FourVector LT(const FourVector &,const FourVector &,const FourVector &);
@@ -23,4 +23,4 @@ namespace apes {
   double SChannelWeight(const FourVector&,const FourVector&,
 			double&,double&,double=-1.0,double=1.0,
 			const FourVector &x=FourVector(1.,1.,0.,0.));
-}// end of namespace apes
+}// end of namespace chili

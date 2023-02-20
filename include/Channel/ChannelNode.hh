@@ -11,7 +11,7 @@
 #include <sstream>
 #include <vector>
 
-namespace apes {
+namespace chili {
 
 class FSMapper;
 

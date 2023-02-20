@@ -8,7 +8,7 @@
 #include <bitset>
 #include <stack>
 
-using apes::FSMapper;
+using chili::FSMapper;
 
 std::string WriteCurrent(size_t cur) {
     std::stringstream ss;
@@ -16,7 +16,7 @@ std::string WriteCurrent(size_t cur) {
     return ss.str();
 }
 
-bool apes::ParticleInfo::Serialize(std::ostream &out) const {
+bool chili::ParticleInfo::Serialize(std::ostream &out) const {
     out.write(reinterpret_cast<const char*>(&idx), sizeof(idx));
     out.write(reinterpret_cast<const char*>(&pid), sizeof(pid));
     out.write(reinterpret_cast<const char*>(&mass), sizeof(mass));
@@ -24,7 +24,7 @@ bool apes::ParticleInfo::Serialize(std::ostream &out) const {
     return true;
 }
 
-bool apes::ParticleInfo::Deserialize(std::istream &in) {
+bool chili::ParticleInfo::Deserialize(std::istream &in) {
     in.read(reinterpret_cast<char*>(&idx), sizeof(idx));
     in.read(reinterpret_cast<char*>(&pid), sizeof(pid));
     in.read(reinterpret_cast<char*>(&mass), sizeof(mass));
@@ -32,7 +32,7 @@ bool apes::ParticleInfo::Deserialize(std::istream &in) {
     return true;
 }
 
-bool apes::ChannelDescription::Serialize(std::ostream &out) const {
+bool chili::ChannelDescription::Serialize(std::ostream &out) const {
     const size_t size = info.size();
     out.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
     for(const auto &particle : info) {
@@ -48,7 +48,7 @@ bool apes::ChannelDescription::Serialize(std::ostream &out) const {
     return true;
 }
 
-bool apes::ChannelDescription::Deserialize(std::istream &in) {
+bool chili::ChannelDescription::Deserialize(std::istream &in) {
     size_t size;
     in.read(reinterpret_cast<char*>(&size), sizeof(size_t));
     info.resize(size);
@@ -66,7 +66,7 @@ bool apes::ChannelDescription::Deserialize(std::istream &in) {
     return true;
 }
 
-std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax) {
+std::vector<std::unique_ptr<FSMapper>> chili::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax) {
     Cuts cuts;
     // TODO: Make this nicer with alias to jet particle
     for(auto f1 : flavs){
@@ -91,11 +91,11 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         cuts.etamax[info.idx] = 99;
         if(i > 1) cuts.sexternal.push_back(info.mass*info.mass);
     }
-    return apes::ConstructChannels(sqrts, flavs, model, cuts, smax);
+    return chili::ConstructChannels(sqrts, flavs, model, cuts, smax);
 }
 
 // TODO: Refactor code to be less messy
-std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, Cuts& cuts, size_t smax) {
+std::vector<std::unique_ptr<FSMapper>> chili::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, Cuts& cuts, size_t smax) {
     Current currentComponents;
     DecayChain decayChain;
 
@@ -230,7 +230,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         if(top.avail_currents.empty()) continue;
         for(size_t i = 0; i < top.avail_currents.size(); ++i) {
             DataFrame d = top;
-            d.schans += apes::NSetBits(top.avail_currents[i])-1;
+            d.schans += chili::NSetBits(top.avail_currents[i])-1;
             if(d.schans > smax) {
                 d.schans = top.schans;
                 d.avail_currents.erase(d.avail_currents.begin()+static_cast<int>(i));
@@ -290,7 +290,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     return mappings;
 }
 
-bool apes::operator<(const ParticleInfo &a, const ParticleInfo &b) {
+bool chili::operator<(const ParticleInfo &a, const ParticleInfo &b) {
     if(a.idx == b.idx) {
         if(a.mass == b.mass) {
             return a.width < b.width;
@@ -300,11 +300,11 @@ bool apes::operator<(const ParticleInfo &a, const ParticleInfo &b) {
     return a.idx < b.idx;
 }
 
-bool apes::operator==(const ParticleInfo &a, const ParticleInfo &b) {
+bool chili::operator==(const ParticleInfo &a, const ParticleInfo &b) {
     return a.mass == b.mass && a.idx == b.idx && a.width == b.width;
 }
 
-bool apes::operator<(const ChannelDescription &a, const ChannelDescription &b) {
+bool chili::operator<(const ChannelDescription &a, const ChannelDescription &b) {
     if(a.info.size() == b.info.size()) {
         for(size_t i = 0; i < a.info.size(); ++i) {
             if(a.info[i] < b.info[i]) return true;

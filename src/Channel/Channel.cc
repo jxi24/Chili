@@ -1,7 +1,7 @@
 #include "Channel/Channel.hh"
 #include "Tools/ChannelElements.hh"
 
-using apes::FSMapper;
+using chili::FSMapper;
 using std::isnan;
 
 bool FSMapper::_Serialize(std::ostream &out) const {

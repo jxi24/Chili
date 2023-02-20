@@ -4,7 +4,7 @@
 #include "Channel/Mapper.hh"
 #include "Integrator/Vegas.hh"
 
-namespace apes {
+namespace chili {
 
 template<typename T>
 struct Channel {
@@ -106,7 +106,7 @@ class Integrand {
         }
 
         // YAML interface
-        friend YAML::convert<apes::Integrand<T>>;
+        friend YAML::convert<chili::Integrand<T>>;
 
     private:
         std::vector<Channel<T>> channels;

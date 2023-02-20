@@ -3,7 +3,7 @@
 
 #include "Integrator/RandUtils.hh"
 
-namespace apes {
+namespace chili {
 
 class Random {
     public:

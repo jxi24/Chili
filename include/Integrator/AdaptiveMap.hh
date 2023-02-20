@@ -13,7 +13,7 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
-namespace apes {
+namespace chili {
 
 using lim = std::numeric_limits<double>;
 

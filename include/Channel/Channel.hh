@@ -5,7 +5,7 @@
 #include "Tools/FourVector.hh"
 #include "Channel/ChannelNode.hh"
 
-namespace apes {
+namespace chili {
 
 using SparseMom = std::unordered_map<unsigned int, FourVector>;
 using SparseMass = std::unordered_map<unsigned int, double>;

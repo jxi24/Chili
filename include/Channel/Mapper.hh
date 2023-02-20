@@ -14,7 +14,7 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
-namespace apes {
+namespace chili {
 
 template<typename T>
 class Mapper {

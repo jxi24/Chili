@@ -14,7 +14,7 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
-namespace apes {
+namespace chili {
 
 using lim = std::numeric_limits<double>;
 
@@ -117,7 +117,7 @@ class StatsData {
         }
         bool operator!=(const StatsData &other) const { return !(*this == other); }
 
-        friend YAML::convert<apes::StatsData>;
+        friend YAML::convert<chili::StatsData>;
     private:
         double n{}, min{lim::max()}, max{lim::min()}, sum{}, sum2{}, n_finite{};
 };
@@ -127,15 +127,15 @@ class StatsData {
 namespace YAML {
 
 template<>
-struct convert<apes::StatsData> {
-    static Node encode(const apes::StatsData &rhs) {
+struct convert<chili::StatsData> {
+    static Node encode(const chili::StatsData &rhs) {
         Node node;
         node = std::vector<double>{rhs.n, rhs.min, rhs.max, rhs.sum, rhs.sum2, rhs.n_finite};
         node.SetStyle(YAML::EmitterStyle::Flow);
         return node;
     }
 
-    static bool decode(const Node &node, apes::StatsData &rhs) {
+    static bool decode(const Node &node, chili::StatsData &rhs) {
         // Ensure the node has 6 entries
         if(node.size() != 6 || !node.IsSequence()) return false;
 

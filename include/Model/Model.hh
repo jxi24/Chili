@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace apes {
+namespace chili {
 
 class Model {
     public:
