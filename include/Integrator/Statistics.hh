@@ -68,6 +68,25 @@ class StatsData {
         StatsData& operator=(StatsData&&) = default;
         ~StatsData() = default;
 
+        bool Deserialize(std::istream &in) {
+            in.read(reinterpret_cast<char*>(&n), sizeof(n));
+            in.read(reinterpret_cast<char*>(&min), sizeof(min));
+            in.read(reinterpret_cast<char*>(&max), sizeof(max));
+            in.read(reinterpret_cast<char*>(&sum), sizeof(sum));
+            in.read(reinterpret_cast<char*>(&sum2), sizeof(sum2));
+            in.read(reinterpret_cast<char*>(&n_finite), sizeof(n_finite));
+            return true;
+        }
+        bool Serialize(std::ostream &out) const {
+            out.write(reinterpret_cast<const char*>(&n), sizeof(n));
+            out.write(reinterpret_cast<const char*>(&min), sizeof(min));
+            out.write(reinterpret_cast<const char*>(&max), sizeof(max));
+            out.write(reinterpret_cast<const char*>(&sum), sizeof(sum));
+            out.write(reinterpret_cast<const char*>(&sum2), sizeof(sum2));
+            out.write(reinterpret_cast<const char*>(&n_finite), sizeof(n_finite));
+            return true;
+        }
+
         double Variance() const { return (sum2/n - Mean()*Mean()) / (n - 1); }
 
         StatsData& operator+=(double x) {

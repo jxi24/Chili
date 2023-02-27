@@ -5,6 +5,10 @@
 #include "Channel/Integrand.hh"
 #include <optional>
 #include <functional>
+#include <filesystem>
+#include <stdexcept>
+
+namespace fs = std::filesystem;
 
 #ifdef ENABLE_MPI
 #include "Tools/MPI.hh"
@@ -18,6 +22,8 @@ struct MultiChannelSummary {
     StatsData sum_results;
 
     StatsData Result() const { return sum_results; }
+    bool Deserialize(std::istream &in);
+    bool Serialize(std::ostream &out) const;
 };
 
 struct MultiChannelParams {
@@ -37,6 +43,9 @@ struct MultiChannelParams {
     static constexpr size_t max_bins_default{200};
     static constexpr size_t nparams = 8;
     static constexpr bool   should_optimize_default{true};
+
+    bool Deserialize(std::istream &in);
+    bool Serialize(std::ostream &out) const;
 };
 
 class MultiChannel {
@@ -50,6 +59,31 @@ class MultiChannel {
         size_t NChannels() const { return channel_weights.size(); }
         MultiChannelParams Parameters() const { return params; }
         MultiChannelParams &Parameters() { return params; }
+        bool Deserialize(std::istream &in);
+        bool Serialize(std::ostream &out) const;
+        template<typename T>
+        bool SaveAs(Integrand<T> &integrand, const std::string &filename="results.chili") const {
+            std::ofstream outfile(filename);
+            return Save(integrand, outfile);
+        }
+        template<typename T>
+        bool Save(Integrand<T> &integrand, std::ostream &out) const {
+            integrand.Serialize(out);
+            return Serialize(out);
+        }
+        template<typename T>
+        bool LoadFrom(Integrand<T> &integrand, const std::string &filename="results.chili") {
+            if(!fs::exists(fs::path(filename))) {
+                throw std::runtime_error(fmt::format("Chili: File {} does not exist", filename));
+            }
+            std::ifstream infile(filename);
+            return Load(integrand, infile);
+        }
+        template<typename T>
+        bool Load(Integrand<T> &integrand, std::istream &in) {
+            integrand.Deserialize(in);
+            return Deserialize(in);
+        }
 
         // Optimization and event generation
         template<typename T>

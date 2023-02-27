@@ -128,23 +128,12 @@ int main() {
     integrator.Summary(std::cout);
 
     spdlog::info("Saving trained integrator");
-    size_t idx = 0;
-    for(const auto &channel : integrand.Channels()) {
-        std::string filename = fmt::format("channel_{}.bin", idx++);
-        std::ofstream output;
-        output.open(filename, std::ios::binary | std::ios::out);
-        channel.Serialize(output);
-        output.close();
-    }
+    integrator.SaveAs(integrand);
 
-    spdlog::info("Finished saving");
-
-    chili::Channel<chili::FourVector> channel;
-    std::string filename = "channel_0.bin";
-    std::ifstream output;
-    output.open(filename, std::ios::binary | std::ios::in);
-    channel.Deserialize(output);
-    output.close();
+    spdlog::info("Loading integrator");
+    chili::MultiChannel integrator2;
+    integrator2.LoadFrom(integrand);
+    integrator2.Summary(std::cout);
 
     // integrator(integrand); // Generate events
 

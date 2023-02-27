@@ -45,6 +45,23 @@ class Integrand {
         std::function<bool(const std::vector<T>&, double)> &PostProcess() { return m_post; }
         const std::function<bool(const std::vector<T>&)> &PreProcess() const { return m_pre; }
         std::function<bool(const std::vector<T>&)> &PreProcess() { return m_pre; }
+        bool Serialize(std::ostream &out) const {
+            size_t size = channels.size();
+            out.write(reinterpret_cast<const char*>(&size), sizeof(size));
+            for(const auto &channel : channels) {
+                channel.Serialize(out);
+            }
+            return true;
+        }
+        bool Deserialize(std::istream &in) {
+            size_t size;
+            in.read(reinterpret_cast<char*>(&size), sizeof(size));
+            channels.resize(size);
+            for(auto &channel : channels) {
+                channel.Deserialize(in);
+            }
+            return true;
+        }
 
         // Channel Utilities
         void AddChannel(Channel<T> channel) { 
