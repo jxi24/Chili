@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace apes {
+namespace chili {
 
 class Integrator {
     public:

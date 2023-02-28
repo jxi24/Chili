@@ -43,7 +43,7 @@ tmp=$( echo "$*" | egrep -- '--\<cflags|cppflags|cxxflags\>')
 test -n "$tmp" && OUT="$OUT -I@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@"
 
 tmp=$( echo "$*" | egrep -- '--\<ldflags|libs\>')
-test -n "$tmp" && OUT="$OUT -L@PACKAGE_CMAKE_INSTALL_LIBDIR@ -lapes"
+test -n "$tmp" && OUT="$OUT -L@PACKAGE_CMAKE_INSTALL_LIBDIR@ -lchili -lTools -lChannel -lIntegrator -lfmt -lyaml-cpp -lspdlog"
 
 tmp=$( echo "$*" | egrep -- '--\<version\>')
 test -n "$tmp" && echo @PROJECT_VERSION@ && exit 0

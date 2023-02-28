@@ -5,6 +5,7 @@
 #include "Model/Model.hh"
 #include "Channel/Channel.hh"
 #include "Tools/JetCluster.hh"
+#include "Interfaces/Tensorflow.hh"
 #include <iostream>
 
 std::vector<int> combine(int i, int j) { 
@@ -53,7 +54,7 @@ bool PreProcess(const std::vector<chili::FourVector> &mom) {
 
 bool PostProcess(const std::vector<chili::FourVector>&, double) { return true; }
 
-int main() {
+std::unique_ptr<chili::Integrand<chili::FourVector>> chili::python::ConstructIntegrand(const std::string &) {
     chili::Model model(combine);
     model.Mass(1) = 0;
     model.Mass(-1) = 0;
@@ -78,27 +79,10 @@ int main() {
 
     spdlog::set_level(spdlog::level::info);
 
-    std::vector<std::vector<int>> processes{
-        {2, -2, 1, -1},
-        {-1, -2, 1, 2},
-        {1, -1, 2, -2, 2, -2},
-        {1, -1, 2, -2, 3, -3},
-        {1, -1, 1, -1, 21, 21, 21},
-        {1, -1, 2, -2, 21, 21, 21}
-    };
-
-    // Construct channels
-    // for(const auto &process : processes) {
-    //     auto mappings = chili::ConstructChannels(13000, process, model, 0);
-    //     if(mappings.size() == 0)
-    //         throw std::logic_error(fmt::format("Failed process {{{}}}",
-    //                                            fmt::join(process.begin(), process.end(), ", ")));
-    // }
-
     auto mappings = chili::ConstructChannels(13000, {21, 21, 21, 21}, model, 0);
 
     // Setup integrator
-    chili::Integrand<chili::FourVector> integrand;
+    auto integrand = std::make_unique<chili::Integrand<chili::FourVector>>();
     for(auto &mapping : mappings) {
         chili::Channel<chili::FourVector> channel;
         channel.mapping = std::move(mapping);
@@ -107,35 +91,17 @@ int main() {
         chili::AdaptiveMap map(channel.mapping -> NDims(), 2);
         // Initializer takes adaptive map and settings (found in struct VegasParams)
         channel.integrator = chili::Vegas(map, chili::VegasParams{});
-        integrand.AddChannel(std::move(channel));
+        integrand -> AddChannel(std::move(channel));
     }
-
-    // Initialize the multichannel integrator
-    // Takes the number of dimensions, the number of channels, and options
-    // The options can be found in the struct MultiChannelParams
-    chili::MultiChannel integrator{integrand.NDims(), integrand.NChannels(), {}};
 
     // To integrate a function you need to pass it in and tell it to optimize
     // Summary will print out a summary of the results including the values of alpha
     auto func = [&](const std::vector<chili::FourVector> &) {
         return 1; // (pow(p[0]*p[2], 2)+pow(p[0]*p[3], 2))/pow(p[2]*p[3], 2);
     };
-    integrand.Function() = func;
-    integrand.PreProcess() = PreProcess;
-    integrand.PostProcess() = PostProcess;
-    spdlog::info("Starting optimization");
-    integrator.Optimize(integrand);
-    integrator.Summary(std::cout);
+    integrand->Function() = func;
+    integrand->PreProcess() = PreProcess;
+    integrand->PostProcess() = PostProcess;
 
-    spdlog::info("Saving trained integrator");
-    integrator.SaveAs(integrand);
-
-    spdlog::info("Loading integrator");
-    chili::MultiChannel integrator2;
-    integrator2.LoadFrom(integrand);
-    integrator2.Summary(std::cout);
-
-    // integrator(integrand); // Generate events
-
-    return 0;
+    return std::move(integrand);
 }

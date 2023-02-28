@@ -11,7 +11,7 @@
 #include <sstream>
 #include <vector>
 
-namespace apes {
+namespace chili {
 
 class FSMapper;
 
@@ -27,6 +27,8 @@ struct ParticleInfo {
     unsigned int idx{};
     int pid{};
     double mass{}, width{};
+    bool Deserialize(std::istream &in);
+    bool Serialize(std::ostream &out) const;
 };
 using Current = std::unordered_map<unsigned int, std::set<ParticleInfo>>;
 using DecayProds = std::pair<ParticleInfo, ParticleInfo>;
@@ -42,8 +44,10 @@ struct DataFrame {
 };
 
 struct ChannelDescription {
-    std::vector<ParticleInfo> info; 
+    std::vector<ParticleInfo> info;
     DecayMap decays{};
+    bool Deserialize(std::istream &in);
+    bool Serialize(std::ostream &out) const;
 };
 using ChannelVec = std::vector<ChannelDescription>;
 
@@ -81,5 +85,6 @@ inline std::string ToString(ChannelDescription channel) {
 std::string ToString(DecayChain chain);
 
 std::vector<std::unique_ptr<FSMapper>> ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax=2);
+std::vector<std::unique_ptr<FSMapper>> ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, Cuts& cuts, size_t smax=2);
 
 }

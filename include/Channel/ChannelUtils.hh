@@ -3,7 +3,7 @@
 #include <array>
 #include <vector>
 
-namespace apes {
+namespace chili {
 
 // Bit operations taken from: https://graphics.stanford.edu/~seander/bithacks.html
 inline unsigned int NextPermutation(unsigned int inp) {

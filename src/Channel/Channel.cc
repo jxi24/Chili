@@ -1,32 +1,46 @@
 #include "Channel/Channel.hh"
 #include "Tools/ChannelElements.hh"
 
-using apes::FSMapper;
+using chili::FSMapper;
 using std::isnan;
+
+bool FSMapper::_Serialize(std::ostream &out) const {
+    m_channel.Serialize(out);
+    out.write(reinterpret_cast<const char*>(&m_sqrts), sizeof(m_sqrts));
+    out.write(reinterpret_cast<const char*>(&m_ptmax), sizeof(m_ptmax));
+    out.write(reinterpret_cast<const char*>(&m_ntot), sizeof(m_ntot));
+    out.write(reinterpret_cast<const char*>(&m_nout), sizeof(m_nout));
+    const size_t size = m_ptmin.size();
+    out.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    for(const auto &pt : m_ptmin) {
+        out.write(reinterpret_cast<const char*>(&pt), sizeof(pt));
+    }
+    // TODO: Serialize the cuts??
+    return true;
+}
 
 void FSMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
     mom.resize(m_ntot);
     iran = 0;
-    SparseMass masses2;
-    SparseMom tmp_mom;
     for(size_t i = 0; i < m_nout; ++i) {
-        masses2[1 << (i + 2)] = m_cuts.sexternal[i];
+        tmp_masses[1 << (i + 2)] = m_cuts.sexternal[i];
     }
-    GenDecays(masses2, rans);
-    GenTChan(tmp_mom, rans, masses2);
-    GenSChan(tmp_mom, rans, masses2);
+    GenDecays(tmp_masses, rans);
+    GenTChan(tmp_mom, rans, tmp_masses);
+    GenSChan(tmp_mom, rans, tmp_masses);
     for(size_t i = 0; i < mom.size(); ++i) {
         mom[i] = tmp_mom[1 << i];
     }
+#ifdef MAPPER_TRACE
     spdlog::trace("Channel = {}", ToString(m_channel));
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+#endif
 }
 
 double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) {
     rans.resize(NDims());
     iran = 0;
     double wgt = 1.0;
-    SparseMom tmp_mom;
     for(size_t i = 0; i < mom.size(); ++i) {
         tmp_mom[1 << i] = mom[i];
     }
@@ -38,9 +52,11 @@ double FSMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<
     double wgttchan = WgtTChan(tmp_mom, rans);
     double wgtschan = WgtSChan(tmp_mom, rans);
     wgt = wgtdecay*wgttchan*wgtschan;
+#ifdef MAPPER_TRACE
     spdlog::trace("Channel = {}", ToString(m_channel));
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  Weight = {}", wgt);
+#endif
     return wgt;
 }
 
@@ -50,12 +66,13 @@ void FSMapper::GenDecays(SparseMass &masses2, const std::vector<double> &rans) {
         const auto part2 = decay.second.second;
         double smin1 = pow(sqrt(masses2[part1.idx])
                           + sqrt(masses2[part2.idx]), 2);
-        double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
+        double deltaR = m_cuts.deltaR.find({part1.pid, part2.pid}) == m_cuts.deltaR.end() 
+            ? 0 : m_cuts.deltaR.at({part1.pid, part2.pid});
         double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
-        double smin = std::max(smin1, smin2);
+        double smin = std::max(std::max(smin1, smin2), m_cuts.smin[part1.idx|part2.idx]);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
-        if(std::abs(decay.first.mass) < 1e-16) {
-            masses2[decay.first.idx] = MasslessPropMomenta(smin, smax, rans[iran++]); 
+        if(std::abs(decay.first.mass) < 1e-16 || decay.first.width < 1e-16) {
+	        masses2[decay.first.idx] = MasslessPropMomenta(0.99,smin, smax, rans[iran++]);
         } else {
             masses2[decay.first.idx] = MassivePropMomenta(decay.first.mass, decay.first.width,
                                                           smin, smax, rans[iran++]); 
@@ -68,18 +85,27 @@ double FSMapper::WgtDecays(const SparseMom &mom, std::vector<double> &rans) {
     for(const auto &decay : m_channel.decays) {
         const auto part1 = decay.second.first;
         const auto part2 = decay.second.second;
-        double smin1 = pow(mom.at(part1.idx).Mass()
-                          + mom.at(part2.idx).Mass(), 2);
-        if(std::isnan(smin1)) smin1 = 0;
-        double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
+        double smin1 = pow(sqrt(std::abs(mom.at(part1.idx).Mass2()))
+                           + sqrt(std::abs(mom.at(part2.idx).Mass2())), 2);
+        //std::cout << "WgtDecays " << part1.idx << " " << part2.idx << " "<<smin1 << std::endl;
+
+        //if(std::isnan(smin1)) smin1 = 0;
+        double deltaR = m_cuts.deltaR.find({part1.pid, part2.pid}) == m_cuts.deltaR.end() 
+            ? 0 : m_cuts.deltaR.at({part1.pid, part2.pid});
+        // double deltaR = m_cuts.deltaR.at({part1.pid, part2.pid});
         double smin2 = m_cuts.ptmin.at(part1.idx)*m_cuts.ptmin.at(part2.idx)*2/M_PI/M_PI*pow(deltaR, 2);
-        double smin = std::max(smin1, smin2);
+        double smin = std::max(std::max(smin1, smin2), m_cuts.smin[part1.idx|part2.idx]);
         double smax = SMax(m_sqrts, m_cuts, decay.first.idx);
-        if(std::abs(decay.first.mass) < 1e-16) {
-            wgt *= MasslessPropWeight(smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
+        //std::cout << "smin1 = " << smin1 << ", smin2 = " << smin2 << std::endl;
+        //std::cout << "smax = "<< smax << " " << m_sqrts*m_sqrts << " " << smax / m_sqrts/m_sqrts << std::endl;
+        //smax = m_sqrts;
+        if(std::abs(decay.first.mass) < 1e-16 || decay.first.width < 1e-16) {
+            wgt *= MasslessPropWeight(0.99,smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
+            // wgt *= MassivePropWeight(10., 2.,
+            //                          smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
         } else {
             wgt *= MassivePropWeight(decay.first.mass, decay.first.width,
-                                     smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]); 
+                                     smin, smax, mom.at(decay.first.idx).Mass2(), rans[iran++]);
         }
         wgt /= (2*M_PI);
     }
@@ -92,13 +118,13 @@ void FSMapper::GenTChan(SparseMom &mom, const std::vector<double> &rans, const S
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         const double ran = rans[iran++];
         double pt{};
-        if(!IsPower2(m_channel.info[i].idx))
+        // if(!IsPower2(m_channel.info[i].idx))
             pt = 2*m_ptmin[i]*m_ptmax*ran/(2*m_ptmin[i]+m_ptmax*(1-ran));
-        else {
-            double hmin = 1/m_ptmax;
-            double hmax = 1/m_ptmin[i];
-            pt = 1/(hmin+ran*(hmax-hmin));
-        }
+	// else {
+        //     double hmin = 1/m_ptmax;
+        //     double hmax = 1/m_ptmin[i];
+        //     pt = 1/(hmin+ran*(hmax-hmin));
+        // }
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
         etamax = std::min(etamax, m_cuts.etamax.at(m_channel.info[i].idx));
@@ -137,15 +163,15 @@ double FSMapper::WgtTChan(const SparseMom &mom, std::vector<double> &rans) {
     for(size_t i = 0; i < m_channel.info.size() - 1; ++i) {
         wgt *= 1.0/(16*pow(M_PI, 3));
         double pt = mom.at(m_channel.info[i].idx).Pt();
-        if(!IsPower2(m_channel.info[i].idx)) {
+        // if(!IsPower2(m_channel.info[i].idx)) {
             wgt *= pt*m_ptmax/2/m_ptmin[i]/(2*m_ptmin[i]+m_ptmax)*pow(2*m_ptmin[i]+pt, 2);
             rans[iran++] = pt*(m_ptmax+2*m_ptmin[i])/(m_ptmax*(pt+2*m_ptmin[i]));
-        } else {
-            double hmin = 1/m_ptmax;
-            double hmax = 1/m_ptmin[i];
-            rans[iran++] = (1/pt-hmin)/(hmax-hmin);
-            wgt *= (hmax-hmin)*pt*pt*pt;
-        }
+	// } else {
+        //     double hmin = 1/m_ptmax;
+        //     double hmax = 1/m_ptmin[i];
+        //     rans[iran++] = (1/pt-hmin)/(hmax-hmin);
+        //     wgt *= (hmax-hmin)*pt*pt*pt;
+        // }
         double etamax = m_sqrts/2/pt; 
         etamax = log(etamax+sqrt(etamax*etamax - 1));
         etamax = std::isnan(etamax) ? 99 : etamax;

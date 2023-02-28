@@ -22,7 +22,7 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
-namespace apes {
+namespace chili {
 
 template<typename T>
 using Func = std::function<double(const std::vector<T>&)>;
@@ -33,7 +33,7 @@ struct VegasParams {
     size_t ninterations{nitn_default};
 
     static constexpr size_t nitn_default = 10, ncalls_default = 10000, nrefine_default = 5;
-    static constexpr double alpha_default = 1.5, rtol_default = 1e-4, atol_default = 1e-4;
+    static constexpr double alpha_default = 1., rtol_default = 1e-4, atol_default = 1e-4;
     static constexpr size_t nparams = 6;
 };
 
@@ -83,7 +83,7 @@ class Vegas {
         VegasSummary Summary() const; 
 
         // YAML interface
-        friend YAML::convert<apes::Vegas>;
+        friend YAML::convert<chili::Vegas>;
 
     private:
         void PrintIteration() const;
@@ -99,8 +99,8 @@ class Vegas {
 namespace YAML {
 
 template<>
-struct convert<apes::VegasSummary> {
-    static Node encode(const apes::VegasSummary &rhs) {
+struct convert<chili::VegasSummary> {
+    static Node encode(const chili::VegasSummary &rhs) {
         Node node;
         node["nentries"] = rhs.results.size();
         for(const auto &entry : rhs.results)
@@ -109,7 +109,7 @@ struct convert<apes::VegasSummary> {
         return node;
     }
 
-    static bool decode(const Node &node, apes::VegasSummary &rhs) {
+    static bool decode(const Node &node, chili::VegasSummary &rhs) {
         // Get the number of entries and ensure that is the number of entries
         // If the number of entries is zero, return then to prevent an error
         auto nentries = node["nentries"].as<size_t>();
@@ -118,28 +118,10 @@ struct convert<apes::VegasSummary> {
 
         // Load the entries and keep track of the sum
         for(const auto &entry : node["entries"]) {
-            rhs.results.push_back(entry.as<apes::StatsData>());
+            rhs.results.push_back(entry.as<chili::StatsData>());
             rhs.sum_results += rhs.results.back();
         }
 
-        return true;
-    }
-};
-
-template<>
-struct convert<apes::Vegas> {
-    static Node encode(const apes::Vegas &rhs) {
-        Node node;
-        node["Grid"] = rhs.grid;
-        node["Summary"] = rhs.summary;
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::Vegas &rhs) {
-        if(node.size() != 2) return false;
-
-        rhs.grid = node["Grid"].as<apes::AdaptiveMap>();
-        rhs.summary = node["Summary"].as<apes::VegasSummary>();
         return true;
     }
 };

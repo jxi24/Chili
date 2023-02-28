@@ -63,7 +63,7 @@ int main() {
         if(top.avail_currents.empty()) continue;
         for(size_t i = 0; i < top.avail_currents.size(); ++i) {
             DataFrame d = top;
-            d.schans += apes::BitsAreSet(top.avail_currents[i], static_cast<unsigned int>(npart)).size() - 1;
+            d.schans += chili::BitsAreSet(top.avail_currents[i], static_cast<unsigned int>(npart)).size() - 1;
             if(d.schans > smax) {
                 d.schans = top.schans;
                 d.avail_currents.erase(d.avail_currents.begin()+static_cast<int>(i));

@@ -4,7 +4,7 @@
 #include "Channel/Mapper.hh"
 #include "Integrator/Vegas.hh"
 
-namespace apes {
+namespace chili {
 
 template<typename T>
 struct Channel {
@@ -15,6 +15,20 @@ struct Channel {
     std::vector<double> rans;
 
     size_t NDims() const { return mapping -> NDims(); }
+    bool Serialize(std::ostream &out) const {
+        integrator.Grid().Serialize(out);
+        Mapper<T>::Serialize(out, *mapping.get());
+        return true;
+    }
+    bool Deserialize(std::istream &in) {
+        AdaptiveMap map;
+        map.Deserialize(in);
+        integrator = Vegas(map, {});
+        std::unique_ptr<Mapper<T>> mapper;
+        Mapper<T>::Deserialize(in, mapper);
+        mapping = std::move(mapper);
+        return true;
+    }
 };
 
 template<typename T>
@@ -31,6 +45,23 @@ class Integrand {
         std::function<bool(const std::vector<T>&, double)> &PostProcess() { return m_post; }
         const std::function<bool(const std::vector<T>&)> &PreProcess() const { return m_pre; }
         std::function<bool(const std::vector<T>&)> &PreProcess() { return m_pre; }
+        bool Serialize(std::ostream &out) const {
+            size_t size = channels.size();
+            out.write(reinterpret_cast<const char*>(&size), sizeof(size));
+            for(const auto &channel : channels) {
+                channel.Serialize(out);
+            }
+            return true;
+        }
+        bool Deserialize(std::istream &in) {
+            size_t size;
+            in.read(reinterpret_cast<char*>(&size), sizeof(size));
+            channels.resize(size);
+            for(auto &channel : channels) {
+                channel.Deserialize(in);
+            }
+            return true;
+        }
 
         // Channel Utilities
         void AddChannel(Channel<T> channel) { 
@@ -51,13 +82,17 @@ class Integrand {
         void InitializeTrain() {
             for(auto &channel : channels) {
                 const auto grid = channel.integrator.Grid();
+                channel.train_data.clear();
                 channel.train_data.resize(grid.Dims()*grid.Bins());
             }
         }
-        void AddTrainData(size_t channel, const double val2) {
+        void AddTrainData(size_t channel, const double val2, const std::vector<double> &rans) {
             const auto grid = channels[channel].integrator.Grid();
-            for(size_t j = 0; j < grid.Dims(); ++j) 
-                channels[channel].train_data[j * grid.Bins() + grid.FindBin(j, channels[channel].rans[j])] += val2;
+            for(size_t j = 0; j < grid.Dims(); ++j) {
+                if(j * grid.Bins() + grid.FindBin(j, rans[j]) > channels[channel].train_data.size())
+                    spdlog::info("{}, {}, {}, {}", channels[channel].train_data.size(), j * grid.Bins() + grid.FindBin(j, rans[j]), rans[j], grid.FindBin(j, rans[j]));
+                channels[channel].train_data[j * grid.Bins() + grid.FindBin(j, rans[j])] += val2;
+            }
         }
         void Train() {
             for(auto &channel : channels) {
@@ -71,90 +106,30 @@ class Integrand {
         // Interface to MultiChannel integration
         void GeneratePoint(size_t channel, std::vector<double> &rans, std::vector<T> &point) const {
             channels[channel].integrator.Grid()(rans);
-            channels[channel].mapping -> GeneratePoint(point, rans); 
+            channels[channel].mapping -> GeneratePoint(point, rans);
         }
-        double GenerateWeight(const std::vector<double> &wgts, const std::vector<T> &point,
-                              std::vector<double> &densities) {
+
+        double GenerateWeight(const std::vector<double> &wgts, const std::vector<T> &point, size_t ichannel,
+                              std::vector<double> &densities, std::vector<double> &rans) const {
             double weight{};
-            std::vector<double> rans;
+            std::vector<double> _rans(point.size());
             for(size_t i = 0; i < NChannels(); ++i) {
-                densities[i] = channels[i].mapping -> GenerateWeight(point, rans);
-                channels[i].rans = rans;
-                double vw = channels[i].integrator.GenerateWeight(rans);
+                densities[i] = channels[i].mapping -> GenerateWeight(point, _rans);
+                if(i == ichannel) rans = _rans;
+                double vw = channels[i].integrator.GenerateWeight(_rans);
                 weight += wgts[i] / densities[i] / vw;
             }
             return 1.0 / weight;
         }
 
         // YAML interface
-        friend YAML::convert<apes::Integrand<T>>;
+        friend YAML::convert<chili::Integrand<T>>;
 
     private:
         std::vector<Channel<T>> channels;
         Func<T> m_func{};
         std::function<bool(const std::vector<T>&, double)> m_post;
         std::function<bool(const std::vector<T>&)> m_pre;
-};
-
-}
-
-namespace YAML {
-
-template<typename T>
-struct convert<apes::Channel<T>> {
-    static Node encode(const apes::Channel<T> &rhs) {
-        Node node;
-        node["Integrator"] = rhs.integrator;
-        // node["Mapper"] = rhs.mapping -> ToYAML();
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::Channel<T> &rhs) {
-        if(node.size() != 2) return false;
-        rhs.integrator = node["Integrator"].as<apes::Vegas>();
-        // TODO: Figure out how to load a saved integrator
-        return true;
-    }
-};
-
-// Dummy YAML encoding / decoding for testing basics
-template<>
-struct convert<apes::Channel<double>> {
-    static Node encode(const apes::Channel<double> &rhs) {
-        Node node;
-        node["Integrator"] = rhs.integrator;
-        // node["Mapper"] = rhs.mapping -> ToYAML();
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::Channel<double> &rhs) {
-        if(node.size() != 2) return false;
-        rhs.integrator = node["Integrator"].as<apes::Vegas>();
-        return true;
-    }
-};
-
-template<typename T>
-struct convert<apes::Integrand<T>> {
-    static Node encode(const apes::Integrand<T> &rhs) {
-        Node node;
-        node["NChannels"] = rhs.channels.size();
-        for(const auto & channel : rhs.channels) {
-            node["Channels"].push_back(channel);
-        }
-        return node;
-    }
-
-    static bool decode(const Node &node, apes::Integrand<T> &rhs) {
-        if(node.size() != 2) return false;
-
-        auto nchannels = node["NChannels"].as<size_t>();
-        if(node["Channels"].size() != nchannels) return false;
-        for(const auto & channel : node["Channels"])
-            rhs.channels.push_back(channel.as<apes::Channel<T>>());
-
-        return true;
-    }
 };
 
 }

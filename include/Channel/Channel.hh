@@ -1,18 +1,20 @@
 #pragma once
 
 #include "Channel/Mapper.hh"
+#include "Tools/Factory.hh"
 #include "Tools/FourVector.hh"
 #include "Channel/ChannelNode.hh"
 
-namespace apes {
+namespace chili {
 
 using SparseMom = std::unordered_map<unsigned int, FourVector>;
 using SparseMass = std::unordered_map<unsigned int, double>;
 
 struct ChannelNode;
 
-class FSMapper : public Mapper<FourVector> {
+class FSMapper : public Mapper<FourVector>, Registrable<Mapper<FourVector>, FSMapper> {
     public:
+        FSMapper() = default;
         FSMapper(double sqrts, size_t ntot, ChannelDescription channel, Cuts cuts) 
             : m_sqrts{sqrts}, m_ptmax{sqrts/2.0}, m_ntot{ntot}, m_nout{ntot-2}, m_channel{channel}, m_cuts{cuts} {
                 for(size_t i = 0; i < m_channel.info.size(); ++i) {
@@ -30,6 +32,23 @@ class FSMapper : public Mapper<FourVector> {
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         size_t NDims() const override { return 3*m_nout - 4 + 2; }
         void WriteChannel() const;
+        static std::string Name() { return "FSMapper"; }
+        static std::unique_ptr<Mapper<FourVector>> _Deserialize(std::istream &in) {
+            auto mapper = std::make_unique<FSMapper>();
+            mapper -> m_channel.Deserialize(in);
+            in.read(reinterpret_cast<char*>(&mapper -> m_sqrts), sizeof(mapper -> m_sqrts));
+            in.read(reinterpret_cast<char*>(&mapper -> m_ptmax), sizeof(mapper -> m_ptmax));
+            in.read(reinterpret_cast<char*>(&mapper -> m_ntot), sizeof(mapper -> m_ntot));
+            in.read(reinterpret_cast<char*>(&mapper -> m_nout), sizeof(mapper -> m_nout));
+            size_t size;
+            in.read(reinterpret_cast<char*>(&size), sizeof(size_t));
+            mapper -> m_ptmin.resize(size);
+            for(auto &pt : mapper -> m_ptmin) {
+                in.read(reinterpret_cast<char*>(&pt), sizeof(pt));
+            }
+            // TODO: Deserialize the cuts??
+            return mapper;
+        }
 
     private:
         void GenDecays(SparseMass&, const std::vector<double>&);
@@ -49,6 +68,12 @@ class FSMapper : public Mapper<FourVector> {
         Cuts m_cuts;
         size_t iran{};
         std::vector<double> m_ptmin;
+        SparseMom tmp_mom;
+        SparseMass tmp_masses;
+
+        // Serialization
+        std::string GetName() const override { return FSMapper::Name(); }
+        bool _Serialize(std::ostream &out) const override;
 };
 
 }

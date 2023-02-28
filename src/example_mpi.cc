@@ -1,3 +1,9 @@
+#include "fmt/format.h"
+#include "Tools/MPI.hh"
+#include "Integrator/Statistics.hh"
+#include "Integrator/Random.hh"
+#include "fmt/core.h"
+#include <stdexcept>
 #include "Channel/ChannelNode.hh"
 #include "Channel/Integrand.hh"
 #include "Channel/MultiChannel.hh"
@@ -53,7 +59,21 @@ bool PreProcess(const std::vector<chili::FourVector> &mom) {
 
 bool PostProcess(const std::vector<chili::FourVector>&, double) { return true; }
 
-int main() {
+int main(int argc, char* argv[]) {
+    auto &mpi = chili::MPIHandler::Instance();
+    mpi.Init(argc, argv);
+
+    // chili::type_builder<chili::StatsData> stats;
+    // stats.add_continuous<double, 6>();
+
+    MPI_Datatype stats_type, double_type;
+    MPI_Type_contiguous(6, MPI_DOUBLE, &stats_type);
+    MPI_Type_contiguous(1, MPI_DOUBLE, &double_type);
+    mpi.RegisterType<chili::StatsData>(stats_type);
+    mpi.RegisterType<double>(double_type);
+    mpi.RegisterOp<chili::StatsAdd>();
+    mpi.RegisterOp<chili::Add>();
+
     chili::Model model(combine);
     model.Mass(1) = 0;
     model.Mass(-1) = 0;
@@ -123,19 +143,35 @@ int main() {
     integrand.Function() = func;
     integrand.PreProcess() = PreProcess;
     integrand.PostProcess() = PostProcess;
-    spdlog::info("Starting optimization");
+    if(mpi.Rank() == 0) {
+        spdlog::info("Starting optimization");
+    }
     integrator.Optimize(integrand);
-    integrator.Summary(std::cout);
+    if(mpi.Rank() == 0) {
+      integrator.Summary(std::cout);
+    }
 
-    spdlog::info("Saving trained integrator");
-    integrator.SaveAs(integrand);
+    if(mpi.Rank() == 0) {
+        spdlog::info("Saving trained integrator");
+        size_t idx = 0;
+        for(const auto &channel : integrand.Channels()) {
+            std::string filename = fmt::format("channel_{}.bin", idx++);
+            std::ofstream output;
+            output.open(filename, std::ios::binary | std::ios::out);
+            channel.Serialize(output);
+            output.close();
+        }
 
-    spdlog::info("Loading integrator");
-    chili::MultiChannel integrator2;
-    integrator2.LoadFrom(integrand);
-    integrator2.Summary(std::cout);
+        spdlog::info("Finished saving");
 
-    // integrator(integrand); // Generate events
+        chili::Channel<chili::FourVector> channel;
+        std::string filename = "channel_0.bin";
+        std::ifstream output;
+        output.open(filename, std::ios::binary | std::ios::in);
+        channel.Deserialize(output);
+        output.close();
+    }
 
+    mpi.CleanUp();
     return 0;
 }

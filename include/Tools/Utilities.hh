@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace apes {
+namespace chili {
 
 template<typename T>
 bool IsClose(const T &a, const T &b, const T &eps = T{1e-8}) {

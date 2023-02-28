@@ -8,7 +8,7 @@
 #include <bitset>
 #include <stack>
 
-using apes::FSMapper;
+using chili::FSMapper;
 
 std::string WriteCurrent(size_t cur) {
     std::stringstream ss;
@@ -16,37 +16,88 @@ std::string WriteCurrent(size_t cur) {
     return ss.str();
 }
 
-// TODO: Refactor code to be less messy
-std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax) {
-    Current currentComponents;
-    DecayChain decayChain;
+bool chili::ParticleInfo::Serialize(std::ostream &out) const {
+    out.write(reinterpret_cast<const char*>(&idx), sizeof(idx));
+    out.write(reinterpret_cast<const char*>(&pid), sizeof(pid));
+    out.write(reinterpret_cast<const char*>(&mass), sizeof(mass));
+    out.write(reinterpret_cast<const char*>(&width), sizeof(width));
+    return true;
+}
+
+bool chili::ParticleInfo::Deserialize(std::istream &in) {
+    in.read(reinterpret_cast<char*>(&idx), sizeof(idx));
+    in.read(reinterpret_cast<char*>(&pid), sizeof(pid));
+    in.read(reinterpret_cast<char*>(&mass), sizeof(mass));
+    in.read(reinterpret_cast<char*>(&width), sizeof(width));
+    return true;
+}
+
+bool chili::ChannelDescription::Serialize(std::ostream &out) const {
+    const size_t size = info.size();
+    out.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    for(const auto &particle : info) {
+        particle.Serialize(out);
+    }
+    const size_t size2 = decays.size();
+    out.write(reinterpret_cast<const char*>(&size2), sizeof(size_t));
+    for(const auto &decay : decays) {
+        decay.first.Serialize(out);
+        decay.second.first.Serialize(out);
+        decay.second.second.Serialize(out);
+    }
+    return true;
+}
+
+bool chili::ChannelDescription::Deserialize(std::istream &in) {
+    size_t size;
+    in.read(reinterpret_cast<char*>(&size), sizeof(size_t));
+    info.resize(size);
+    for(auto &particle : info) {
+        particle.Deserialize(in);
+    }
+    in.read(reinterpret_cast<char*>(&size), sizeof(size_t));
+    ParticleInfo p12, p1, p2;
+    for(size_t i = 0; i < size; ++i) {
+        p12.Deserialize(in);
+        p1.Deserialize(in);
+        p2.Deserialize(in);
+        decays[p12] = {p1, p2};
+    }
+    return true;
+}
+
+std::vector<std::unique_ptr<FSMapper>> chili::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, size_t smax) {
     Cuts cuts;
     // TODO: Make this nicer with alias to jet particle
-    cuts.deltaR[{-1, -1}] = 0.4;
-    cuts.deltaR[{-1, 1}] = 0.4;
-    cuts.deltaR[{-1, 2}] = 0.4;
-    cuts.deltaR[{-1, -2}] = 0.4;
-    cuts.deltaR[{-1, 21}] = 0.4;
-    cuts.deltaR[{1, -1}] = 0.4;
-    cuts.deltaR[{1, 1}] = 0.4;
-    cuts.deltaR[{1, 2}] = 0.4;
-    cuts.deltaR[{1, -2}] = 0.4;
-    cuts.deltaR[{1, 21}] = 0.4;
-    cuts.deltaR[{2, -1}] = 0.4;
-    cuts.deltaR[{2, 1}] = 0.4;
-    cuts.deltaR[{2, 2}] = 0.4;
-    cuts.deltaR[{2, -2}] = 0.4;
-    cuts.deltaR[{2, 21}] = 0.4;
-    cuts.deltaR[{-2, -1}] = 0.4;
-    cuts.deltaR[{-2, 1}] = 0.4;
-    cuts.deltaR[{-2, 2}] = 0.4;
-    cuts.deltaR[{-2, -2}] = 0.4;
-    cuts.deltaR[{-2, 21}] = 0.4;
-    cuts.deltaR[{21, -1}] = 0.4;
-    cuts.deltaR[{21, 1}] = 0.4;
-    cuts.deltaR[{21, 2}] = 0.4;
-    cuts.deltaR[{21, -2}] = 0.4;
-    cuts.deltaR[{21, 21}] = 0.4;
+    for(auto f1 : flavs){
+      for(auto f2 : flavs) {
+        // do we really need this between all outgoing particles?
+        // not sure if this is correct for the leptons
+        // probably wrong for ttbar
+        if(std::abs(f1) == 6 or std::abs(f2) == 6)
+          cuts.deltaR[{f1, f2}] = 0.;
+        else
+          cuts.deltaR[{f1, f2}] = 0.4;
+      }
+    }
+    for(size_t i = 0; i < flavs.size(); ++i) {
+        ParticleInfo info;
+        info.idx = 1 << i;
+        info.pid = flavs[i];
+        info.mass = model.Mass(info.pid);
+        cuts.smin[info.idx] = info.mass*info.mass;
+        // TODO: Make this read in
+        cuts.ptmin[info.idx] = 30;
+        cuts.etamax[info.idx] = 99;
+        if(i > 1) cuts.sexternal.push_back(info.mass*info.mass);
+    }
+    return chili::ConstructChannels(sqrts, flavs, model, cuts, smax);
+}
+
+// TODO: Refactor code to be less messy
+std::vector<std::unique_ptr<FSMapper>> chili::ConstructChannels(double sqrts, const std::vector<int> &flavs, const Model &model, Cuts& cuts, size_t smax) {
+    Current currentComponents;
+    DecayChain decayChain;
 
     // Setup initial states
     for(size_t i = 0; i < flavs.size(); ++i) {
@@ -56,11 +107,6 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         info.mass = model.Mass(info.pid);
         info.width = model.Width(info.pid);
         currentComponents[info.idx].insert(info);
-        cuts.smin[info.idx] = info.mass*info.mass;
-        // TODO: Make this read in
-        cuts.ptmin[info.idx] = 30;
-        cuts.etamax[info.idx] = 99;
-        if(i > 1) cuts.sexternal.push_back(info.mass*info.mass);
     }
 
     // Recursion over all set particles
@@ -74,7 +120,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                 unsigned int idx = (1u << iset) - 1;
                 while(idx < (1u << (nset - 1))) {
                     unsigned int subCur1 = 0;
-                    for(unsigned int i = 0; i < flavs.size(); ++i)
+                    for(unsigned int i = 0; i < set.size(); ++i)
                         subCur1 += set[i]*((idx >> i) & 1);
                     auto subCur2 = cur ^ subCur1;
                     // Skip over initial state legs
@@ -103,7 +149,7 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
                         idx = NextPermutation(idx);
                         continue;
                     }
-                            
+
                     for(const auto & elm : combined) {
                         ParticleInfo info;
                         info.pid = elm;
@@ -139,17 +185,16 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         }
     }
 
+    spdlog::trace("Available currents:");
     std::vector<unsigned int> avail_currents;
     for(const auto & chelm : currentComponents) {
         avail_currents.push_back(chelm.first);
+        spdlog::trace("  - {}", chelm.first);
     }
 
     std::stack<DataFrame> s;
     size_t max_id = (1 << flavs.size()) - 1;
-    std::set<int> pids;
-    for(const auto &info : currentComponents[2]) {
-        pids.insert(info.pid);
-    }
+    std::set<int> pids{currentComponents[1].begin() -> pid};
     s.push({pids, {avail_currents}});
     std::set<ChannelDescription> channels;
     while(!s.empty()) {
@@ -185,15 +230,17 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
         if(top.avail_currents.empty()) continue;
         for(size_t i = 0; i < top.avail_currents.size(); ++i) {
             DataFrame d = top;
-            d.schans += apes::NSetBits(top.avail_currents[i])-1;
+            d.schans += chili::NSetBits(top.avail_currents[i])-1;
             if(d.schans > smax) {
                 d.schans = top.schans;
                 d.avail_currents.erase(d.avail_currents.begin()+static_cast<int>(i));
                 continue;
             }
-            if(!d.currents.empty()) {
-                if(d.currents.back() > top.avail_currents[i]) continue;
-            }
+            // if(!d.currents.empty()) {
+            //     // Ensure that one and only one particle is combined with an initial state
+            //     // Since the s-channel particles have already been combined
+            //     if(!(d.currents.back() & 3) && !(top.avail_currents[i] & 3)) continue;
+            // }
             if(HaveCommonBitSet(d.idx_sum, top.avail_currents[i])) continue;
             std::set<int> combined;
             for(const auto &pid1 : d.pid) {
@@ -236,28 +283,28 @@ std::vector<std::unique_ptr<FSMapper>> apes::ConstructChannels(double sqrts, con
     // Convert channel descriptions to mappings
     std::vector<std::unique_ptr<FSMapper>> mappings;
     for(auto ch_descr : channels) {
-        spdlog::info("Channel: {}", ToString(ch_descr));
+        spdlog::trace("Channel: {}", ToString(ch_descr));
         mappings.emplace_back(std::make_unique<FSMapper>(sqrts, flavs.size(), ch_descr, cuts));
     }
 
     return mappings;
 }
 
-bool apes::operator<(const ParticleInfo &a, const ParticleInfo &b) {
+bool chili::operator<(const ParticleInfo &a, const ParticleInfo &b) {
     if(a.idx == b.idx) {
         if(a.mass == b.mass) {
-            return a.pid < b.pid;
+            return a.width < b.width;
         }
         return a.mass < b.mass;
     }
     return a.idx < b.idx;
 }
 
-bool apes::operator==(const ParticleInfo &a, const ParticleInfo &b) {
-    return a.mass == b.mass && a.idx == b.idx && a.pid == b.pid;
+bool chili::operator==(const ParticleInfo &a, const ParticleInfo &b) {
+    return a.mass == b.mass && a.idx == b.idx && a.width == b.width;
 }
 
-bool apes::operator<(const ChannelDescription &a, const ChannelDescription &b) {
+bool chili::operator<(const ChannelDescription &a, const ChannelDescription &b) {
     if(a.info.size() == b.info.size()) {
         for(size_t i = 0; i < a.info.size(); ++i) {
             if(a.info[i] < b.info[i]) return true;

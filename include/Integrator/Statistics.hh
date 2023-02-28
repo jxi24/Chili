@@ -1,6 +1,7 @@
 #ifndef STATISTICS_HH
 #define STATISTICS_HH
 
+#include "fmt/core.h"
 #include <algorithm>
 #include <limits>
 #include <vector>
@@ -13,7 +14,7 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
-namespace apes {
+namespace chili {
 
 using lim = std::numeric_limits<double>;
 
@@ -46,7 +47,7 @@ class Percentile {
         }
 
         double Get() const { return m_lower.front(); }
-        
+
         void Clear() {
             m_lower.clear();
             m_upper.clear();
@@ -66,6 +67,25 @@ class StatsData {
         StatsData& operator=(const StatsData&) = default;
         StatsData& operator=(StatsData&&) = default;
         ~StatsData() = default;
+
+        bool Deserialize(std::istream &in) {
+            in.read(reinterpret_cast<char*>(&n), sizeof(n));
+            in.read(reinterpret_cast<char*>(&min), sizeof(min));
+            in.read(reinterpret_cast<char*>(&max), sizeof(max));
+            in.read(reinterpret_cast<char*>(&sum), sizeof(sum));
+            in.read(reinterpret_cast<char*>(&sum2), sizeof(sum2));
+            in.read(reinterpret_cast<char*>(&n_finite), sizeof(n_finite));
+            return true;
+        }
+        bool Serialize(std::ostream &out) const {
+            out.write(reinterpret_cast<const char*>(&n), sizeof(n));
+            out.write(reinterpret_cast<const char*>(&min), sizeof(min));
+            out.write(reinterpret_cast<const char*>(&max), sizeof(max));
+            out.write(reinterpret_cast<const char*>(&sum), sizeof(sum));
+            out.write(reinterpret_cast<const char*>(&sum2), sizeof(sum2));
+            out.write(reinterpret_cast<const char*>(&n_finite), sizeof(n_finite));
+            return true;
+        }
 
         double Variance() const { return (sum2/n - Mean()*Mean()) / (n - 1); }
 
@@ -116,8 +136,7 @@ class StatsData {
         }
         bool operator!=(const StatsData &other) const { return !(*this == other); }
 
-        friend YAML::convert<apes::StatsData>;
-
+        friend YAML::convert<chili::StatsData>;
     private:
         double n{}, min{lim::max()}, max{lim::min()}, sum{}, sum2{}, n_finite{};
 };
@@ -127,15 +146,15 @@ class StatsData {
 namespace YAML {
 
 template<>
-struct convert<apes::StatsData> {
-    static Node encode(const apes::StatsData &rhs) {
+struct convert<chili::StatsData> {
+    static Node encode(const chili::StatsData &rhs) {
         Node node;
         node = std::vector<double>{rhs.n, rhs.min, rhs.max, rhs.sum, rhs.sum2, rhs.n_finite};
         node.SetStyle(YAML::EmitterStyle::Flow);
         return node;
     }
 
-    static bool decode(const Node &node, apes::StatsData &rhs) {
+    static bool decode(const Node &node, chili::StatsData &rhs) {
         // Ensure the node has 6 entries
         if(node.size() != 6 || !node.IsSequence()) return false;
 

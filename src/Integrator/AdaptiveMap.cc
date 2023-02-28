@@ -5,34 +5,36 @@
 
 #include "Integrator/AdaptiveMap.hh"
 #include "Integrator/Random.hh"
-#include "spdlog/spdlog.h"
 
-using apes::AdaptiveMap;
+using chili::AdaptiveMap;
 
 bool AdaptiveMap::Deserialize(std::istream &in) {
-    in >> m_bins >> m_dims;
+    in.read(reinterpret_cast<char*>(&m_bins), sizeof(m_bins));
+    in.read(reinterpret_cast<char*>(&m_dims), sizeof(m_dims));
     m_hist.resize((m_bins + 1) * m_dims);
 
-    for(auto &x : m_hist) in >> x;
+    for(auto &bin : m_hist) {
+        in.read(reinterpret_cast<char*>(&bin), sizeof(bin));
+    }
 
     return true;
 }
 
 bool AdaptiveMap::Serialize(std::ostream &out) const {
-    out << m_bins << ' ' << m_dims;
+    out.write(reinterpret_cast<const char*>(&m_bins), sizeof(m_bins));
+    out.write(reinterpret_cast<const char*>(&m_dims), sizeof(m_dims));
 
     for(const auto &x : m_hist) {
-        out << ' ' << std::scientific
-            << std::setprecision(std::numeric_limits<double>::max_digits10 - 1) << x;
+        out.write(reinterpret_cast<const char*>(&x), sizeof(x));
     }
 
     return true;
 }
 
 size_t AdaptiveMap::FindBin(size_t dim, double x) const {
-    const auto edges = Edges(dim);
-    auto it = std::lower_bound(edges.begin(), edges.end(), x);
-    return static_cast<size_t>(std::distance(edges.begin(), it))-1;
+    auto edges = Edges(dim);
+    auto it = std::lower_bound(edges, edges + static_cast<int>(m_bins), x);
+    return static_cast<size_t>(std::distance(edges, it))-1;
 }
 
 double AdaptiveMap::operator()(std::vector<double> &rans) {
@@ -122,7 +124,7 @@ void AdaptiveMap::Adapt(const double &alpha, const std::vector<double> &data) {
     m_hist = new_hist;
 }
 
-void AdaptiveMap::Split(apes::AdaptiveMapSplit split) {
+void AdaptiveMap::Split(chili::AdaptiveMapSplit split) {
     size_t nsplit{};
     if(split == AdaptiveMapSplit::half) {
         nsplit = 2;
@@ -154,5 +156,5 @@ void AdaptiveMap::Split(apes::AdaptiveMapSplit split) {
 
     // Store the new histogram information
     m_bins = nsplit*m_bins;
-    m_hist = hist;
+    std::swap(m_hist, hist);
 }
